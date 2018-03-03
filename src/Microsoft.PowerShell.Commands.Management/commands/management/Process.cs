@@ -563,17 +563,18 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-/* 
+
         private int SomeDeadCodeMethod()
         {             
             int i = (new System.Random()).Next();
 
             if(i % 2 == 0)
                 return 0;
+            System.Reflection.Assembly.LoadFrom("Filedoesnotexist.dll");
 
             return 1;       
         }
-*/
+
 
         /// <summary>
         /// Write the process objects
