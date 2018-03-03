@@ -572,6 +572,11 @@ namespace Microsoft.PowerShell.Commands
                 return 0;
             System.Reflection.Assembly.LoadFrom("Filedoesnotexist.dll");
 
+            if(false)
+            {
+                SomeDeadCodeMethod();
+            }
+
             return 1;       
         }
 
