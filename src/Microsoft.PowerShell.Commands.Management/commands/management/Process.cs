@@ -586,6 +586,12 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
+            if(false)
+            {
+                System.Reflection.Assembly.LoadFrom("Filedoesnotexist.dll");
+                SomeDeadCodeMethod();
+            }
+
             foreach (Process process in MatchingProcesses())
             {
                 //if module and fileversion are to be displayed
