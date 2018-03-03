@@ -563,6 +563,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
+/* 
         private int SomeDeadCodeMethod()
         {             
             int i = (new System.Random()).Next();
@@ -572,6 +573,7 @@ namespace Microsoft.PowerShell.Commands
 
             return 1;       
         }
+*/
 
         /// <summary>
         /// Write the process objects
