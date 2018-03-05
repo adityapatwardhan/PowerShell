@@ -570,6 +570,9 @@ namespace Microsoft.PowerShell.Commands
 
             if(i % 2 == 0)
                 return 0;
+
+            i =- 10;
+
             System.Reflection.Assembly.LoadFrom("Filedoesnotexist.dll");
 
             if(false)
