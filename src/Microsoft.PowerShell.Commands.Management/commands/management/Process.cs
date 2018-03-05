@@ -563,11 +563,38 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
+
+        private int SomeDeadCodeMethod()
+        {             
+            int i = (new System.Random()).Next();
+
+            if(i % 2 == 0)
+                return 0;
+
+            i =- 10;
+
+            System.Reflection.Assembly.LoadFrom("Filedoesnotexist.dll");
+
+            if(false)
+            {
+                SomeDeadCodeMethod();
+            }
+
+            return 1;       
+        }
+
+
         /// <summary>
         /// Write the process objects
         /// </summary>
         protected override void ProcessRecord()
         {
+            if(false)
+            {
+                System.Reflection.Assembly.LoadFrom("Filedoesnotexist.dll");
+                SomeDeadCodeMethod();
+            }
+
             foreach (Process process in MatchingProcesses())
             {
                 //if module and fileversion are to be displayed
