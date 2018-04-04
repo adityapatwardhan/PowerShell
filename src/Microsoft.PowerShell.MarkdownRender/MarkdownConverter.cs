@@ -25,15 +25,15 @@ namespace Microsoft.PowerShell.MarkdownRender
 
     /// <summary>
     /// </summary>
-    public class MarkdownRenderInfo
+    public class MarkdownInfo
     {
         /// <summary>
         /// </summary>
-        public string AsHTML { get; internal set;}
+        public string Html { get; internal set;}
 
         /// <summary>
         /// </summary>
-        public string AsVT100 { get; internal set;}
+        public string VT100EndcodedString { get; internal set;}
 
         /// <summary>
         /// </summary>
@@ -46,9 +46,9 @@ namespace Microsoft.PowerShell.MarkdownRender
     {
         /// <summary>
         /// </summary>
-        public static MarkdownRenderInfo Convert(MarkdownConversionType conversionType, string markdownString)
+        public static MarkdownInfo Convert(string markdownString, MarkdownConversionType conversionType)
         {
-            var renderInfo = new MarkdownRenderInfo();
+            var renderInfo = new MarkdownInfo();
             MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
             var writer = new StringWriter();
@@ -58,13 +58,13 @@ namespace Microsoft.PowerShell.MarkdownRender
 
             if(conversionType.HasFlag(MarkdownConversionType.HTML))
             {
-                renderInfo.AsHTML = Markdig.Markdown.Convert(markdownString, renderer, pipeline).ToString();
+                renderInfo.Html = Markdig.Markdown.Convert(markdownString, renderer, pipeline).ToString();
             }
 
             if(conversionType.HasFlag(MarkdownConversionType.VT100))
             {
                 //not implemented
-                renderInfo.AsVT100 = null;
+                renderInfo.VT100EndcodedString = null;
             }
 
             return renderInfo;
