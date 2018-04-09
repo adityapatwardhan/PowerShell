@@ -96,7 +96,7 @@ namespace Microsoft.PowerShell.Commands
 
                     if(!String.IsNullOrEmpty(vt100String))
                     {
-                        WriteObject(vt100String);
+                        WriteObject(vt100String);                                                
                     }
                     else
                     {
@@ -104,7 +104,7 @@ namespace Microsoft.PowerShell.Commands
                             new InvalidDataException(),
                             "VT100EncodedStringIsNullOrEmpty",
                             ErrorCategory.InvalidData,
-                            html);
+                            vt100String);
                         
                         WriteError(errorRecord);
                     }

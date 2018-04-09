@@ -33,7 +33,7 @@ namespace Microsoft.PowerShell.MarkdownRender
 
         /// <summary>
         /// </summary>
-        public string VT100EndcodedString { get; internal set;}
+        public string VT100EncodedString { get; internal set;}
 
         /// <summary>
         /// </summary>
@@ -48,24 +48,26 @@ namespace Microsoft.PowerShell.MarkdownRender
         /// </summary>
         public static MarkdownInfo Convert(string markdownString, MarkdownConversionType conversionType)
         {
-            var renderInfo = new MarkdownInfo();
-            MarkdownPipeline pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-
+            var renderInfo = new MarkdownInfo();            
             var writer = new StringWriter();
-            var renderer = new Markdig.Renderers.HtmlRenderer(writer);
-            var parsed = Markdig.Markdown.Parse(markdownString, pipeline);
-            renderInfo.Tokens = parsed;
-
+            MarkdownPipeline pipeline = null;       
+            
             if(conversionType.HasFlag(MarkdownConversionType.HTML))
             {
+                pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+                var renderer = new Markdig.Renderers.HtmlRenderer(writer);
                 renderInfo.Html = Markdig.Markdown.Convert(markdownString, renderer, pipeline).ToString();
             }
 
             if(conversionType.HasFlag(MarkdownConversionType.VT100))
             {
-                //not implemented
-                renderInfo.VT100EndcodedString = null;
+                pipeline = new MarkdownPipelineBuilder().Build();
+                var renderer = new VT100Renderer(writer);
+                renderInfo.VT100EncodedString = Markdig.Markdown.Convert(markdownString, renderer, pipeline).ToString();
             }
+
+            var parsed = Markdig.Markdown.Parse(markdownString, pipeline);
+            renderInfo.Tokens = parsed;
 
             return renderInfo;
         }
