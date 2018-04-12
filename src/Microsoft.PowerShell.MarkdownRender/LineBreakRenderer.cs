@@ -15,14 +15,11 @@ namespace Microsoft.PowerShell.MarkdownRender
         {
             if(obj.IsHard)
             {
-                renderer.WriteLine(Environment.NewLine);
+                renderer.WriteLine();
             }
             else
             {
-                if(obj.ToString().Length > 0)
-                {
-                    renderer.WriteLine();
-                }
+                renderer.Write(" ");
             }
         }
     }

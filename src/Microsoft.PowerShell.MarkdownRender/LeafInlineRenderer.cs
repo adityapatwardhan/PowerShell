@@ -13,16 +13,16 @@ namespace Microsoft.PowerShell.MarkdownRender
     {
         protected override void Write(VT100Renderer renderer, LeafInline obj)
         {
-            /*if(obj.NextSibling == null)
+            if(obj.NextSibling == null)
             {
                 renderer.WriteLine(obj.ToString());
             }
             else
             {
                 renderer.Write(obj.ToString());
-            }*/
+            }
 
-            renderer.Write(obj.ToString());
+            //renderer.Write(obj.ToString());
         }
     }
 }

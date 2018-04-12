@@ -28,7 +28,8 @@ namespace Microsoft.PowerShell.MarkdownRender
             ObjectRenderers.Add(new ParagraphBlockRenderer());
             ObjectRenderers.Add(new LeafInlineRenderer());
             ObjectRenderers.Add(new LinkInlineRenderer());
-            ObjectRenderers.Add(new BlankLineBlockRenderer());
+            ObjectRenderers.Add(new ListBlockRenderer());
+            ObjectRenderers.Add(new ListItemBlockRenderer());
         }
 
         /// <summary>

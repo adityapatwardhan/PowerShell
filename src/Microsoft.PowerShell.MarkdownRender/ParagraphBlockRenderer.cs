@@ -8,7 +8,7 @@ using Markdig.Syntax;
 using Markdig.Renderers;
 
 namespace Microsoft.PowerShell.MarkdownRender
-{\
+{
     internal class ParagraphBlockRenderer : VT100ObjectRenderer<ParagraphBlock>
     {
         protected override void Write(VT100Renderer renderer, ParagraphBlock obj)
