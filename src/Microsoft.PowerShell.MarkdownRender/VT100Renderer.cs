@@ -30,6 +30,7 @@ namespace Microsoft.PowerShell.MarkdownRender
             ObjectRenderers.Add(new LinkInlineRenderer());
             ObjectRenderers.Add(new ListBlockRenderer());
             ObjectRenderers.Add(new ListItemBlockRenderer());
+            ObjectRenderers.Add(new QuoteBlockRenderer());
         }
 
         /// <summary>
