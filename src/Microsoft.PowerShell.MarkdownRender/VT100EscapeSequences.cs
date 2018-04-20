@@ -14,61 +14,50 @@ namespace Microsoft.PowerShell.MarkdownRender
     public class MarkdownOptionInfo
     {
         private const char Esc = (char) 0x1b;
-        private const string header1EscSeq = "[7m";
-        private const string header2EscSeq = "[4;93m";
-        private const string header3EscSeq = "[4;94m";
-        private const string header4EscSeq = "[4;95m";
-        private const string header5EscSeq = "[4;96m";
-        private const string header6EscSeq = "[4;97m";
-        private const string codeEscSeq = "[48;2;155;155;155;38;2;30;30;30m";
-        private const string linkEscSeq = "[4;34m";
-        private const string imageEscSeq = "[33m";
-        private const string boldEscSeq = "[1m";
-        private const string italicsEscSeq = "[36m";
 
         /// <summary>
         /// </summary>
-        public string Header1 { get; set; } = header1EscSeq;
+        public string Header1 { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Header2 { get; set; } = header2EscSeq;
+        public string Header2 { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Header3 { get; set; } = header3EscSeq;
+        public string Header3 { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Header4 { get; set; } = header4EscSeq;
+        public string Header4 { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Header5 { get; set; } = header5EscSeq;
+        public string Header5 { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Header6 { get; set; } = header6EscSeq;
+        public string Header6 { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Code { get; set; } = codeEscSeq;
+        public string Code { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Link { get; set; } = linkEscSeq;
+        public string Link { get; set; }
 
         /// <summary>
         /// </summary>
-        public string Image { get; set; } = imageEscSeq;
+        public string Image { get; set; }
 
         /// <summary>
         /// </summary>
-        public string EmphasisBold { get; set; } = boldEscSeq;
+        public string EmphasisBold { get; set; }
 
         /// <summary>
         /// </summary>
-        public string EmphasisItalics { get; set; } = italicsEscSeq;
+        public string EmphasisItalics { get; set; }
 
         /// <summary>
         /// </summary>
@@ -84,6 +73,47 @@ namespace Microsoft.PowerShell.MarkdownRender
             {
                 throw new InvalidOperationException();
             }
+        }
+
+        /// <summary>
+        /// </summary>
+        public MarkdownOptionInfo()
+        {
+            SetDarkTheme();
+        }
+
+        /// <summary>
+        /// </summary>
+        public void SetDarkTheme()
+        {
+            Header1 = "[7m";
+            Header2 = "[4;93m";
+            Header3 = "[4;94m";
+            Header4 = "[4;95m";
+            Header5 = "[4;96m";
+            Header6 = "[4;97m";
+            Code = "[48;2;155;155;155;38;2;30;30;30m";
+            Link = "[4;38;5;117m";
+            Image = "[33m";
+            EmphasisBold = "[1m";
+            EmphasisBold = "[36m";
+        }
+
+        /// <summary>
+        /// </summary>
+        public void SetLightTheme()
+        {
+            Header1 = "[7m";
+            Header2 = "[4;33m";
+            Header3 = "[4;34m";
+            Header4 = "[4;35m";
+            Header5 = "[4;36m";
+            Header6 = "[4;30m";
+            Code = "[48;2;155;155;155;38;2;30;30;30m";
+            Link = "[4;38;5;117m";
+            Image = "[33m";
+            EmphasisBold = "[1m";
+            EmphasisBold = "[36m";
         }
     }
 
