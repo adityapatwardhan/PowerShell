@@ -23,7 +23,7 @@ namespace Microsoft.PowerShell.MarkdownRender
                     }
                     else
                     {
-                        renderer.WriteLine(VT100EscapeSequences.FormatCode(codeLine.ToString(), isInline: false));
+                        renderer.WriteLine(renderer.EscapeSequences.FormatCode(codeLine.ToString(), isInline: false));
                     }
                 }
             }

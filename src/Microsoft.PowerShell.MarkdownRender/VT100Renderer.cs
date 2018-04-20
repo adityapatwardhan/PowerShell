@@ -16,9 +16,11 @@ namespace Microsoft.PowerShell.MarkdownRender
         /// <summary>
         ///
         /// </summary>
-        public VT100Renderer(TextWriter writer) : base(writer)
+        public VT100Renderer(TextWriter writer, MarkdownOptionInfo optionInfo) : base(writer)
         {
             EnableVT100Encoding = true;
+
+            EscapeSequences = new VT100EscapeSequences(optionInfo);
 
             ObjectRenderers.Add(new HeaderBlockRenderer());
             ObjectRenderers.Add(new LineBreakRenderer());
@@ -38,5 +40,8 @@ namespace Microsoft.PowerShell.MarkdownRender
         /// </summary>
         public bool EnableVT100Encoding { get; set;}
 
+        /// <summary>
+        /// </summary>
+        public VT100EscapeSequences EscapeSequences { get; private set;}
     }
 }

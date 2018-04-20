@@ -46,12 +46,12 @@ namespace Microsoft.PowerShell.MarkdownRender
     {
         /// <summary>
         /// </summary>
-        public static MarkdownInfo Convert(string markdownString, MarkdownConversionType conversionType)
+        public static MarkdownInfo Convert(string markdownString, MarkdownConversionType conversionType, MarkdownOptionInfo optionInfo)
         {
-            var renderInfo = new MarkdownInfo();            
+            var renderInfo = new MarkdownInfo();
             var writer = new StringWriter();
-            MarkdownPipeline pipeline = null;       
-            
+            MarkdownPipeline pipeline = null;
+
             if(conversionType.HasFlag(MarkdownConversionType.HTML))
             {
                 pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
@@ -62,7 +62,7 @@ namespace Microsoft.PowerShell.MarkdownRender
             if(conversionType.HasFlag(MarkdownConversionType.VT100))
             {
                 pipeline = new MarkdownPipelineBuilder().Build();
-                var renderer = new VT100Renderer(writer);
+                var renderer = new VT100Renderer(writer, optionInfo);
                 renderInfo.VT100EncodedString = Markdig.Markdown.Convert(markdownString, renderer, pipeline).ToString();
             }
 

@@ -62,6 +62,13 @@ namespace Microsoft.PowerShell.Commands
         {
             var conversionType = MarkdownConversionType.HTML;
 
+            var mdOption = (SessionState.PSVariable.GetValue("MarkdownOptionInfo", new MarkdownOptionInfo())) as MarkdownOptionInfo;
+
+            if(mdOption == null)
+            {
+                throw new InvalidOperationException();
+            }
+
             if (AsVT100EncodedString)
             {
                 conversionType = MarkdownConversionType.VT100;
@@ -78,7 +85,8 @@ namespace Microsoft.PowerShell.Commands
                         WriteObject(
                             MarkdownConverter.Convert(
                                 ReadContentFromFile(fileInfo.FullName).Result,
-                                conversionType
+                                conversionType,
+                                mdOption
                             )
                         );
                     }
@@ -87,7 +95,7 @@ namespace Microsoft.PowerShell.Commands
                         var inpObj = baseObj as string;
                         if (inpObj != null)
                         {
-                            WriteObject(MarkdownConverter.Convert(inpObj, conversionType));
+                            WriteObject(MarkdownConverter.Convert(inpObj, conversionType, mdOption));
                         }
                         else
                         {
@@ -104,16 +112,16 @@ namespace Microsoft.PowerShell.Commands
                     break;
 
                 case PathParamSet:
-                    ConvertEachFile(Path, conversionType, isLiteral: false);
+                    ConvertEachFile(Path, conversionType, isLiteral: false, optionInfo: mdOption);
                     break;
 
                 case LitPathParamSet:
-                    ConvertEachFile(LiteralPath, conversionType, isLiteral: true);
+                    ConvertEachFile(LiteralPath, conversionType, isLiteral: true, optionInfo: mdOption);
                     break;
             }
         }
 
-        private void ConvertEachFile(IEnumerable<string> paths, MarkdownConversionType conversionType, bool isLiteral)
+        private void ConvertEachFile(IEnumerable<string> paths, MarkdownConversionType conversionType, bool isLiteral, MarkdownOptionInfo optionInfo)
         {
             foreach (var path in paths)
             {
@@ -126,7 +134,8 @@ namespace Microsoft.PowerShell.Commands
                         WriteObject(
                             MarkdownConverter.Convert(
                                 ReadContentFromFile(resolvedPath).Result,
-                                conversionType)
+                                conversionType,
+                                optionInfo)
                         );
                     }
                     else

@@ -15,13 +15,12 @@ namespace Microsoft.PowerShell.MarkdownRender
         {
             if(obj.IsImage)
             {
-                renderer.Write(VT100EscapeSequences.FormatImage(obj.FirstChild.ToString()));
+                renderer.Write(renderer.EscapeSequences.FormatImage(obj.FirstChild.ToString()));
             }
             else
             {
-                renderer.Write(VT100EscapeSequences.FormatLink(obj.FirstChild.ToString(), obj.Url));
+                renderer.Write(renderer.EscapeSequences.FormatLink(obj.FirstChild.ToString(), obj.Url));
             }
         }
     }
 }
-    
