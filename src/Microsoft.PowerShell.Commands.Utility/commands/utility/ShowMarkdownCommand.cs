@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +36,20 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         [Parameter()]
         public SwitchParameter UseBrowser { get; set; }
+
+        private SteppablePipeline stepPipe;
+
+        /// <summary>
+        /// </summary>
+        protected override void BeginProcessing()
+        {
+            if(! this.MyInvocation.BoundParameters.ContainsKey("UseBrowser"))
+            {
+                // Since UseBrowser is not bound, we use proxy to Out-Default
+                stepPipe = ScriptBlock.Create(@"Microsoft.PowerShell.Core\Out-Default @PSBoundParameters").GetSteppablePipeline(this.MyInvocation.CommandOrigin);
+                stepPipe.Begin(this);
+            }
+        }
 
         /// <summary>
         /// Override ProcessRecord
@@ -86,7 +101,7 @@ namespace Microsoft.PowerShell.Commands
                             "HtmlIsNullOrEmpty",
                             ErrorCategory.InvalidData,
                             html);
-                        
+
                         WriteError(errorRecord);
                     }
                 }
@@ -96,7 +111,10 @@ namespace Microsoft.PowerShell.Commands
 
                     if(!String.IsNullOrEmpty(vt100String))
                     {
-                        WriteObject(vt100String);                                                
+                        if(stepPipe != null)
+                        {
+                            stepPipe.Process(vt100String);
+                        }
                     }
                     else
                     {
@@ -105,10 +123,20 @@ namespace Microsoft.PowerShell.Commands
                             "VT100EncodedStringIsNullOrEmpty",
                             ErrorCategory.InvalidData,
                             vt100String);
-                        
+
                         WriteError(errorRecord);
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// </summary>
+        protected override void EndProcessing()
+        {
+            if(stepPipe != null)
+            {
+                stepPipe.End();
             }
         }
     }
