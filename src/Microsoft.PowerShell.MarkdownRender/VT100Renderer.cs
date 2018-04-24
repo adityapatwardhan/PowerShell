@@ -10,18 +10,18 @@ using Markdig.Renderers;
 namespace Microsoft.PowerShell.MarkdownRender
 {
     /// <summary>
+    /// Implementation of the VT100 renderer.
     /// </summary>
-    public class VT100Renderer : TextRendererBase<VT100Renderer>
+    public sealed class VT100Renderer : TextRendererBase<VT100Renderer>
     {
         /// <summary>
-        ///
+        /// Initialize the VT100 renderer with <param name="optionInfo"/> and write the output <param name="writer"/>.
         /// </summary>
         public VT100Renderer(TextWriter writer, MarkdownOptionInfo optionInfo) : base(writer)
         {
-            EnableVT100Encoding = true;
-
             EscapeSequences = new VT100EscapeSequences(optionInfo);
 
+            // Add the various element renderers.
             ObjectRenderers.Add(new HeaderBlockRenderer());
             ObjectRenderers.Add(new LineBreakRenderer());
             ObjectRenderers.Add(new CodeInlineRenderer());
@@ -36,11 +36,7 @@ namespace Microsoft.PowerShell.MarkdownRender
         }
 
         /// <summary>
-        ///
-        /// </summary>
-        public bool EnableVT100Encoding { get; set;}
-
-        /// <summary>
+        /// Get the current escape sequences.
         /// </summary>
         public VT100EscapeSequences EscapeSequences { get; private set;}
     }

@@ -9,10 +9,14 @@ using Markdig.Renderers;
 
 namespace Microsoft.PowerShell.MarkdownRender
 {
+    /// <summary>
+    /// Renderer for adding VT100 escape sequences for list blocks.
+    /// </summary>
     internal class ListBlockRenderer : VT100ObjectRenderer<ListBlock>
     {
         protected override void Write(VT100Renderer renderer, ListBlock obj)
         {
+            // start index of a numbered block.
             int index = 1;
 
             foreach (var item in obj)
@@ -37,6 +41,7 @@ namespace Microsoft.PowerShell.MarkdownRender
 
         private void RenderNumberedList(VT100Renderer renderer, ListItemBlock block, int index)
         {
+            // For a numbered list, we need to make sure the index is incremented.
             foreach (var line in block)
             {
                 var paragraphBlock = line as ParagraphBlock;

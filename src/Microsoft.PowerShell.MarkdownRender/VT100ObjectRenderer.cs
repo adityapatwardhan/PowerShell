@@ -10,9 +10,9 @@ using Markdig.Renderers;
 namespace Microsoft.PowerShell.MarkdownRender
 {
     /// <summary>
+    /// Implement the MarkdownObjectRenderer with VT100Renderer.
     /// </summary>
     public abstract class VT100ObjectRenderer<T> : MarkdownObjectRenderer<VT100Renderer, T> where T : MarkdownObject
     {
-
     }
 }

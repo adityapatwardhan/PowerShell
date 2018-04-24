@@ -9,10 +9,14 @@ using Markdig.Renderers;
 
 namespace Microsoft.PowerShell.MarkdownRender
 {
+    /// <summary>
+    /// Renderer for adding VT100 escape sequences for links.
+    /// </summary>
     internal class LinkInlineRenderer : VT100ObjectRenderer<LinkInline>
     {
         protected override void Write(VT100Renderer renderer, LinkInline obj)
         {
+            // Format link as image or link.
             if(obj.IsImage)
             {
                 renderer.Write(renderer.EscapeSequences.FormatImage(obj.FirstChild.ToString()));

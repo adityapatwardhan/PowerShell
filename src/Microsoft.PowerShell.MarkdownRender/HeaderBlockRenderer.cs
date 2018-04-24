@@ -9,10 +9,14 @@ using Markdig.Renderers;
 
 namespace Microsoft.PowerShell.MarkdownRender
 {
+    /// <summary>
+    /// Renderer for adding VT100 escape sequences for headings.
+    /// </summary>
     internal class HeaderBlockRenderer : VT100ObjectRenderer<HeadingBlock>
     {
         protected override void Write(VT100Renderer renderer, HeadingBlock obj)
         {
+            // Format header and then add blank line to improve readability.
             switch(obj.Level)
             {
                 case 1:

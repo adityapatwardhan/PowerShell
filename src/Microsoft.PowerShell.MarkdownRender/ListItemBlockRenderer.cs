@@ -9,6 +9,9 @@ using Markdig.Renderers;
 
 namespace Microsoft.PowerShell.MarkdownRender
 {
+    /// <summary>
+    /// Renderer for adding VT100 escape sequences for items in a list block.
+    /// </summary>
     internal class ListItemBlockRenderer : VT100ObjectRenderer<ListItemBlock>
     {
         protected override void Write(VT100Renderer renderer, ListItemBlock obj)
@@ -29,6 +32,7 @@ namespace Microsoft.PowerShell.MarkdownRender
 
         private void RenderWithIndent(VT100Renderer renderer, MarkdownObject block, char listBullet, int indentLevel)
         {
+            // Indent left by 2 for each level on list.
             string indent = "".PadLeft(indentLevel * 2);
 
             var paragraphBlock = block as ParagraphBlock;
@@ -37,7 +41,7 @@ namespace Microsoft.PowerShell.MarkdownRender
             {
                 renderer.Write(indent).Write(listBullet).Write(" ").Write(paragraphBlock.Inline);
             }
-            else
+            else //If there is a sublist, the block is a ListBlock instead of ParagraphBlock.
             {
                 var subList = block as ListBlock;
                 if (subList != null)
@@ -50,6 +54,7 @@ namespace Microsoft.PowerShell.MarkdownRender
                         {
                             foreach (var line in subListItemBlock)
                             {
+                                // Increment indent level for sub list.
                                 RenderWithIndent(renderer, line, listBullet, indentLevel + 1);
                             }
                         }

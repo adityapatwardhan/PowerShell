@@ -9,6 +9,9 @@ using Markdig.Renderers;
 
 namespace Microsoft.PowerShell.MarkdownRender
 {
+    /// <summary>
+    /// Renderer for adding VT100 escape sequences for bold and italics elements.
+    /// </summary>
     internal class EmphasisInlineRenderer : VT100ObjectRenderer<EmphasisInline>
     {
         protected override void Write(VT100Renderer renderer, EmphasisInline obj)

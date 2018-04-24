@@ -10,56 +10,70 @@ using Markdig.Renderers;
 namespace Microsoft.PowerShell.MarkdownRender
 {
     /// <summary>
+    /// Class to represent color preference options for various markdown elements.
     /// </summary>
-    public class MarkdownOptionInfo
+    public sealed class MarkdownOptionInfo
     {
         private const char Esc = (char) 0x1b;
 
         /// <summary>
+        /// Current VT100 escape sequence for header 1.
         /// </summary>
         public string Header1 { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for header 2.
         /// </summary>
         public string Header2 { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for header 3.
         /// </summary>
         public string Header3 { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for header 4.
         /// </summary>
         public string Header4 { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for header 5.
         /// </summary>
         public string Header5 { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for header 6.
         /// </summary>
         public string Header6 { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for code inline and code blocks.
         /// </summary>
         public string Code { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for links.
         /// </summary>
         public string Link { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for images.
         /// </summary>
         public string Image { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for bold text.
         /// </summary>
         public string EmphasisBold { get; set; }
 
         /// <summary>
+        /// Current VT100 escape sequence for italics text.
         /// </summary>
         public string EmphasisItalics { get; set; }
 
         /// <summary>
+        /// Get the property as an rendered escape sequence.
+        /// This is used for typesps1xml for displaying.
         /// </summary>
         public string AsEscapeSequence(string propertyName)
         {
@@ -76,6 +90,7 @@ namespace Microsoft.PowerShell.MarkdownRender
         }
 
         /// <summary>
+        /// Set dark as the default theme.
         /// </summary>
         public MarkdownOptionInfo()
         {
@@ -83,6 +98,7 @@ namespace Microsoft.PowerShell.MarkdownRender
         }
 
         /// <summary>
+        /// Set all preference for dark theme.
         /// </summary>
         public void SetDarkTheme()
         {
@@ -96,10 +112,11 @@ namespace Microsoft.PowerShell.MarkdownRender
             Link = "[4;38;5;117m";
             Image = "[33m";
             EmphasisBold = "[1m";
-            EmphasisBold = "[36m";
+            EmphasisItalics = "[36m";
         }
 
         /// <summary>
+        /// Set all preference for light theme.
         /// </summary>
         public void SetLightTheme()
         {
@@ -113,7 +130,7 @@ namespace Microsoft.PowerShell.MarkdownRender
             Link = "[4;38;5;117m";
             Image = "[33m";
             EmphasisBold = "[1m";
-            EmphasisBold = "[36m";
+            EmphasisItalics = "[36m";
         }
     }
 
@@ -129,6 +146,7 @@ namespace Microsoft.PowerShell.MarkdownRender
         private MarkdownOptionInfo options;
 
         /// <summary>
+        /// Set the options as per <param name="optionInfo"/>
         /// </summary>
         public VT100EscapeSequences(MarkdownOptionInfo optionInfo)
         {
@@ -199,6 +217,7 @@ namespace Microsoft.PowerShell.MarkdownRender
             }
             else
             {
+                // For code blocks, [500@ make sure that the whole line has background color.
                 return String.Concat(Esc, options.Code, codeText, Esc, "[500@", EndSequence);
             }
         }

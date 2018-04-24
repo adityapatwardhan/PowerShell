@@ -9,6 +9,9 @@ using Markdig.Renderers;
 
 namespace Microsoft.PowerShell.MarkdownRender
 {
+    /// <summary>
+    /// Renderer for adding VT100 escape sequences for code blocks with language type.
+    /// </summary>
     internal class FencedCodeBlockRenderer : VT100ObjectRenderer<FencedCodeBlock>
     {
         protected override void Write(VT100Renderer renderer, FencedCodeBlock obj)
@@ -17,6 +20,8 @@ namespace Microsoft.PowerShell.MarkdownRender
             {
                 if (!String.IsNullOrWhiteSpace(codeLine.ToString()))
                 {
+                    // If the code block is of type YAML, then tab to right to improve readability.
+                    // This specifically helps for parameters help content.
                     if (String.Equals(obj.Info, "yaml", StringComparison.OrdinalIgnoreCase))
                     {
                         renderer.WriteLine("\t" + codeLine.ToString());
@@ -28,6 +33,7 @@ namespace Microsoft.PowerShell.MarkdownRender
                 }
             }
 
+            // Add a blank line after the code block for better readability.
             renderer.WriteLine();
         }
     }
