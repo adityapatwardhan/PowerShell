@@ -18,13 +18,10 @@ Describe 'ConvertFrom-Markdown tests' -Tags 'CI' {
             [Parameter()]
             [string] $ElementType,
 
-            [Parameter(ParameterSetName = "Header")]
             [string] $Text,
 
-            [Parameter(ParameterSetName = "Code")]
             [string] $CodeFormatString,
 
-            [Parameter(ParameterSetName = "Code")]
             [string] $CodeText
             )
 
@@ -40,9 +37,15 @@ Describe 'ConvertFrom-Markdown tests' -Tags 'CI' {
                 "Code" { ($CodeFormatString -f "$esc[48;2;155;155;155;38;2;30;30;30m$CodeText$esc[0m") + "`n`n" }
                 "CodeBlock" {
                     $expectedString = @()
-                    $CodeText -split "`n" | ForEach-Object { $expectedString += "$esc[48;2;155;155;155;38;2;30;30;30m$_$esc[500@[0m" }
-                    $expectedString -join "`n"
+                    $CodeText -split "`n" | ForEach-Object { $expectedString += "$esc[48;2;155;155;155;38;2;30;30;30m$_$esc[500@$esc[0m" }
+                    $returnString = $expectedString -join "`n"
+                    "$returnString`n`n"
                 }
+
+                "Link" { "$esc[4;38;5;117m`"$text`"$esc[0m`n" }
+                "Image" { "$esc[33m[$text]$esc[0m`n" }
+                "Bold" { "$esc[1m$text$esc[0m`n" }
+                "Italics" { "$esc[36m$text$esc[0m`n" }
             }
         }
 
@@ -58,13 +61,12 @@ Describe 'ConvertFrom-Markdown tests' -Tags 'CI' {
             [Parameter()]
             [string] $ElementType,
 
-            [Parameter(ParameterSetName = "Header")]
             [string] $Text,
 
-            [Parameter(ParameterSetName = "Code")]
+            [string] $Url,
+
             [string] $CodeFormatString,
 
-            [Parameter(ParameterSetName = "Code")]
             [string] $CodeText
             )
 
@@ -80,13 +82,22 @@ Describe 'ConvertFrom-Markdown tests' -Tags 'CI' {
                 "Header6" { "<h6 id=`"$id`">$text</h6>`n" }
 
                 "Code" { "<p>" + ($CodeFormatString -f "<code>$CodeText</code>") + "</p>`n" }
-                "CodeBlock" { "<pre><code>$CodeText</code></pre>`n" }
+                "CodeBlock" { "<pre><code>$CodeText`n</code></pre>`n" }
+
+                "Link" { "<p><a href=`"$Url`">$text</a></p>`n" }
+                "Image" { "<p><img src=`"$url`" alt=`"$text`" /></p>`n" }
+                "Bold" { "<p><strong>$text</strong></p>`n" }
+                "Italics" { "<p><em>$text</em></p>`n" }
             }
         }
     }
 
     Context 'Basic tests' {
         BeforeAll {
+            $esc = [char]0x1b
+            $mdFile = New-Item -Path $TestDrive/input.md -Value "Some **test string** to write in a file" -Force
+            $mdLiteralPath = New-Item -Path $TestDrive/LiteralPath.md -Value "Some **test string** to write in a file" -Force
+            $expectedStringFromFile = "Some $esc[1mtest string$esc[0m to write in a file`n`n"
 
             $codeBlock = @'
 ```
@@ -96,11 +107,9 @@ bool function()
 ```
 '@
 
-            $codeBlockText = @'
-bool function()
-{
-}
-'@
+            $codeBlockText = @"
+bool function()`n{`n}
+"@
 
                 $TestCases = @(
                     @{ element = 'Header1'; InputMD = '# Header 1'; Text = 'Header 1' }
@@ -111,16 +120,24 @@ bool function()
                     @{ element = 'Header6'; InputMD = '###### Header 6'; Text = 'Header 6' }
                     @{ element = 'Code'; InputMD = 'This is a `code` sample'; CodeFormatString = 'This is a {0} sample'; CodeText = 'code'}
                     @{ element = 'CodeBlock'; InputMD = $codeBlock; CodeText = $codeBlockText }
+                    @{ element = 'Link'; InputMD = '[GitHub](https://www.github.com)'; Text = 'GitHub'; Url = 'https://www.github.com'}
+                    @{ element = 'Image'; InputMD = '![alt-text](https://bing.com/ps.svg)'; Text = 'alt-text'; Url = 'https://bing.com/ps.svg'}
+                    @{ element = 'Bold'; InputMD = '**bold text**'; Text = 'bold text' }
+                    @{ element = 'Italics'; InputMD = '*italics text*'; Text = 'italics text' }
                 )
         }
 
 
-        It 'Can convert header element : <element> to vt100 using pipeline input' -TestCases $TestCases {
+        It 'Can convert element : <element> to vt100 using pipeline input' -TestCases $TestCases {
             param($element, $inputMD, $text, $codeFormatString, $codeText)
 
             $output = $inputMD | ConvertFrom-Markdown -AsVT100EncodedString
 
-            if($element -like 'Header?')
+            if($element -like 'Header?' -or
+               $element -eq 'Link' -or
+               $element -eq 'Image' -or
+               $element -eq 'Bold' -or
+               $element -eq 'Italics')
             {
                 $expectedString = GetExpectedString -ElementType $element -Text $text
             }
@@ -136,12 +153,14 @@ bool function()
             $output.VT100EncodedString | Should BeExactly $expectedString
         }
 
-        It 'Can convert header element : <element> to HTML using pipeline input' -TestCases $TestCases {
-            param($element, $inputMD, $text, $codeFormatString, $codeText)
+        It 'Can convert element : <element> to HTML using pipeline input' -TestCases $TestCases {
+            param($element, $inputMD, $text, $codeFormatString, $codeText, $url)
 
             $output = $inputMD | ConvertFrom-Markdown
 
-            if($element -like 'Header?')
+            if($element -like 'Header?' -or
+               $element -eq 'Bold' -or
+               $element -eq 'Italics')
             {
                 $expectedString = GetExpectedHTML -ElementType $element -Text $text
             }
@@ -153,8 +172,41 @@ bool function()
             {
                 $expectedString = GetExpectedHTML -ElementType $element -CodeText $codeText
             }
+            elseif ($element -eq 'Link')
+            {
+                $expectedString = GetExpectedHTML -ElementType $element -Text $text -Url $url
+            }
+            elseif ($element -eq 'Image')
+            {
+                $expectedString = GetExpectedHTML -ElementType $element -Text $text -Url $url
+            }
 
             $output.Html | Should BeExactly $expectedString
+        }
+
+        It 'Can convert input from a file path to vt100 encoded string' {
+            $output = ConvertFrom-Markdown -Path $mdFile.FullName -AsVT100EncodedString
+            $output.VT100EncodedString | Should BeExactly $expectedStringFromFile
+        }
+
+        It 'Can convert input from a fileinfo object to vt100 encoded string' {
+            $ouputFromFileInfo = $mdFile | ConvertFrom-Markdown -AsVT100EncodedString
+            $ouputFromFileInfo.VT100EncodedString | Should BeExactly $expectedStringFromFile
+        }
+
+        It 'Can convert input from a literal path to vt100 encoded string' {
+            $output = ConvertFrom-Markdown -Path $mdLiteralPath -AsVT100EncodedString
+            $output.VT100EncodedString | Should BeExactly $expectedStringFromFile
+        }
+    }
+
+    Context "ConvertFrom-Markdown error cases" {
+        It "Gets an error if path is not FileSystem provider path" {
+            { ConvertFrom-Markdown -Path Env:\PSModulePath -ErrorAction Stop } | Should -Throw -ErrorId 'ConvertFromMarkdownOnlySupportsFileSystemPaths,Microsoft.PowerShell.Commands.ConvertFromMarkdownCommand'
+        }
+
+        It "Gets an error if path does not exist" {
+            { ConvertFrom-Markdown -Path DoestnotExist -ErrorAction Stop } | Should -Throw -ErrorId 'FileNotFound,Microsoft.PowerShell.Commands.ConvertFromMarkdownCommand'
         }
     }
 }
