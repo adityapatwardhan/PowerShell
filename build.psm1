@@ -1535,6 +1535,12 @@ function Get-RedHatPackageManager {
     }
 }
 
+function BOTTest {
+    gps | ForEach-Object { 
+        Write-host $_.Name
+   }
+}
+
 function Start-PSBootstrap {
     [CmdletBinding(
         SupportsShouldProcess=$true,
