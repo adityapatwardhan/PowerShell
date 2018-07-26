@@ -5,6 +5,8 @@
 # On Windows paths is separated by semicolon
 $script:TestModulePathSeparator = [System.IO.Path]::PathSeparator
 
+Write-Host "Hello"
+
 $dotnetCLIChannel = "release"
 $dotnetCLIRequiredVersion = $(Get-Content $PSScriptRoot/global.json | ConvertFrom-Json).Sdk.Version
 
