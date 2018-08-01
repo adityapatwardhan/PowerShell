@@ -11,6 +11,13 @@ $dotnetCLIRequiredVersion = $(Get-Content $PSScriptRoot/global.json | ConvertFro
 # Track if tags have been sync'ed
 $tagsUpToDate = $false
 
+function PSSABotCatchThis
+{
+    Write-Host "This should not be used"
+    
+    Get-Process | % { $_.Name } 
+}
+
 # Sync Tags
 # When not using a branch in PowerShell/PowerShell, tags will not be fetched automatically
 # Since code that uses Get-PSCommitID and Get-PSLatestTag assume that tags are fetched,
