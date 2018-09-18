@@ -1399,7 +1399,8 @@ namespace System.Management.Automation.Help
             foreach (string file in Directory.GetFiles(sourcePath))
             {
                 if (!String.Equals(Path.GetExtension(file), ".xml", StringComparison.OrdinalIgnoreCase)
-                    && !String.Equals(Path.GetExtension(file), ".txt", StringComparison.OrdinalIgnoreCase))
+                    && !String.Equals(Path.GetExtension(file), ".txt", StringComparison.OrdinalIgnoreCase)
+                    && !String.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new UpdatableHelpSystemException("HelpContentContainsInvalidFiles",
                         StringUtil.Format(HelpDisplayStrings.HelpContentContainsInvalidFiles), ErrorCategory.InvalidData,
@@ -1511,7 +1512,8 @@ namespace System.Management.Automation.Help
                         }
                     }
                 }
-                else if (String.Equals(Path.GetExtension(file), ".txt", StringComparison.OrdinalIgnoreCase))
+                else if (String.Equals(Path.GetExtension(file), ".txt", StringComparison.OrdinalIgnoreCase) ||
+                         String.Equals(Path.GetExtension(file), ".md", StringComparison.OrdinalIgnoreCase))
                 {
                     FileStream fileStream = new FileStream(file, FileMode.Open, FileAccess.Read);
 

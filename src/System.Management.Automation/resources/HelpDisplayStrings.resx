@@ -384,7 +384,7 @@
     <value>Saving Help</value>
   </data>
   <data name="HelpContentContainsInvalidFiles" xml:space="preserve">
-    <value>Help content contains files that are not valid. Only .txt and .xml files are supported.</value>
+    <value>Help content contains files that are not valid. Only .md, .txt and .xml files are supported.</value>
   </data>
   <data name="FailedToSaveHelpForModule" xml:space="preserve">
     <value>Failed to save Help for the module(s) '{0}' : {1}</value>
