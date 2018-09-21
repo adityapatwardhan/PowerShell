@@ -224,6 +224,7 @@ namespace System.Management.Automation
                 {
                     // Try load the help file specified by CmdletInfo.HelpFile property
                     helpFile = FindHelpFile(cmdletInfo);
+
                     if (!String.IsNullOrEmpty(helpFile) && !_helpFiles.Contains(helpFile))
                     {
                         LoadHelpFile(helpFile, cmdletInfo.ModuleName, cmdletInfo.Name, reportErrors);
@@ -527,7 +528,14 @@ namespace System.Management.Automation
                 helpFileToLoad = Path.GetFullPath(helpFileToLoad);
             }
 
-            string location = MUIFileSearcher.LocateFile(helpFileToLoad, searchPaths);
+            // Prefer Markdown help if present.
+            string location = MUIFileSearcher.LocateFile(string.Concat(cmdletInfo.Name, ".md"), searchPaths);
+
+            if (string.IsNullOrEmpty(location))
+            {
+                // Fallback to load MAML help.
+                location = MUIFileSearcher.LocateFile(helpFileToLoad, searchPaths);
+            }
 
             // let caller take care of getting help info in a different way
             // like "get-command -syntax"
@@ -658,6 +666,35 @@ namespace System.Management.Automation
             }
         }
 
+        private void LoadMarkdownHelp(string helpFile, string helpFileIdentifier)
+        {
+            try
+            {
+                if (File.Exists(helpFile))
+                {
+                    string mdContent = null;
+
+                    using (StreamReader reader = new StreamReader(new FileStream(helpFile, FileMode.Open, FileAccess.Read, FileShare.Read)))
+                    {
+                        mdContent = reader.ReadToEndAsync().Result;
+                    }
+
+                    MarkdownCommandHelpInfo helpInfo = null;
+                    helpInfo = MarkdownCommandHelpInfo.Load(mdContent, HelpCategory.Cmdlet);
+
+                    if (helpInfo != null)
+                    {
+                        this.HelpSystem.TraceErrors(helpInfo.Errors);
+                        AddToCommandCache(helpFileIdentifier, helpInfo.Name, helpInfo);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
         /// <summary>
         /// Load help file for HelpInfo objects. The HelpInfo objects will be
         /// put into help cache.
@@ -670,10 +707,17 @@ namespace System.Management.Automation
         /// </remarks>
         private void LoadHelpFile(string helpFile, string helpFileIdentifier)
         {
+            if (helpFile.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                LoadMarkdownHelp(helpFile, helpFileIdentifier);
+                return;
+            }
+
             XmlDocument doc = InternalDeserializer.LoadUnsafeXmlDocument(
                 new FileInfo(helpFile),
                 false, /* ignore whitespace, comments, etc. */
                 null); /* default maxCharactersInDocument */
+
 
             // Add this file into _helpFiles hashtable to prevent it to be loaded again.
             _helpFiles[helpFile] = 0;
@@ -786,8 +830,14 @@ namespace System.Management.Automation
             // Win8: Win8:477680: When Function/Workflow Use External Help, Category Property is "Cmdlet"
             if ((result != null) && (result.HelpCategory != helpCategory))
             {
-                MamlCommandHelpInfo original = (MamlCommandHelpInfo)result;
-                result = original.Copy(helpCategory);
+                if(result is MamlCommandHelpInfo mamlOriginal)
+                {
+                    result = mamlOriginal.Copy(helpCategory);
+                }
+                else if(result is MarkdownCommandHelpInfo mdOriginal)
+                {
+                    result = mdOriginal.Copy(helpCategory);
+                }
             }
 
             return result;
@@ -930,7 +980,7 @@ namespace System.Management.Automation
         /// <param name="mshSnapInId">PSSnapIn name that this cmdlet belongs to.</param>
         /// <param name="cmdletName">Name of the cmdlet.</param>
         /// <param name="helpInfo">Help object for the cmdlet.</param>
-        private void AddToCommandCache(string mshSnapInId, string cmdletName, MamlCommandHelpInfo helpInfo)
+        private void AddToCommandCache(string mshSnapInId, string cmdletName, BaseCommandHelpInfo helpInfo)
         {
             Debug.Assert(!string.IsNullOrEmpty(cmdletName), "Cmdlet Name should not be null or empty.");
 

@@ -59,7 +59,7 @@ namespace System.Management.Automation
             MamlNode mamlNode = new MamlNode(xmlNode);
             _fullHelpObject = mamlNode.PSObject;
 
-            this.Errors = mamlNode.Errors;
+            this.Errors = mamlNode.Errors;this.Errors = mamlNode.Errors;
 
             // The type name hierarchy for mshObject doesn't necessary
             // reflect the hierarchy in source code. From display's point of

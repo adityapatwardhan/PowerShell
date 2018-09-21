@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.PowerShell.CoreCLR.Eventing\Microsoft.PowerShell.CoreCLR.Eventing.csproj" />
+    <ProjectReference Include="..\Microsoft.PowerShell.MarkdownRender\Microsoft.PowerShell.MarkdownRender.csproj" />
     <!-- the following package(s) are from https://github.com/JamesNK/Newtonsoft.Json -->
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <!-- the following package(s) are from https://github.com/dotnet/corefx -->
