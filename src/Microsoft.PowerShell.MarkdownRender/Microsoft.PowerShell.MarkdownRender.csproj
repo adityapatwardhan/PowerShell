@@ -7,14 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-<<<<<<< HEAD
   <!-- Source: https://github.com/lunet-io/markdig/ -->
-    <ProjectReference Include="../System.Management.Automation/System.Management.Automation.csproj" />
     <PackageReference Include="Markdig.Signed" Version="0.15.3" />
-=======
-    <!-- Source: https://github.com/lunet-io/markdig/ -->
-    <PackageReference Include="Markdig.Signed" Version="0.15.2" />
->>>>>>> Basic help object returned
   </ItemGroup>
 
 </Project>
