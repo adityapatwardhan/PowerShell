@@ -25,6 +25,10 @@ Describe "Start-Process" -Tag "Feature","RequireAdminOnWindows" {
 
     # Note that ProcessName may still be `powershell` due to dotnet/corefx#5378
     # This has been fixed on Linux, but not on macOS
+    
+    It "Codacy should catch this" {
+        gps pwsh | % { $_.Id | Should -Not -Be 0 }
+    }
 
     It "Should process arguments without error" {
 	    $process = Start-Process ping -ArgumentList $pingParam -PassThru -RedirectStandardOutput "$TESTDRIVE/output" @extraArgs
