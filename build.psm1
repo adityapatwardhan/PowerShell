@@ -91,7 +91,7 @@ function Get-PSCommitId
     # So, Write a warning to run Sync-PSTags
     if(!$tagsUpToDate)
     {
-        Write-Warning "Run Sync-PSTags to update tags"
+       Write-Host "Run Sync-PSTags to update tags"
     }
 
     return (Start-NativeExecution {git --git-dir="$PSScriptRoot/.git" describe --dirty --abbrev=60})
