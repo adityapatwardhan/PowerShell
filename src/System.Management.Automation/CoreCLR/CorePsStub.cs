@@ -587,7 +587,7 @@ namespace System.Management.Automation
     #endregion
 }
 
-#if UNIX
+/* #if UNIX
 
 namespace System.Management.Automation.Security
 {
@@ -944,7 +944,7 @@ namespace System.Management.Automation.Tracing
     }
 }
 
-#endif
+#endif */
 
 namespace Microsoft.PowerShell
 {

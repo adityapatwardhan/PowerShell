@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-#if !UNIX
 
 using System.Globalization;
 using System.Management.Automation.Runspaces;
@@ -941,23 +940,26 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         internal PowerShellTraceSource(PowerShellTraceTask task, PowerShellTraceKeywords keywords)
         {
-            if (IsEtwSupported)
+            if (Platform.IsWindows)
             {
-                DebugChannel = new PowerShellChannelWriter(PowerShellTraceChannel.Debug,
-                                                           keywords | PowerShellTraceKeywords.UseAlwaysDebug);
-                AnalyticChannel = new PowerShellChannelWriter(PowerShellTraceChannel.Analytic,
-                                                              keywords | PowerShellTraceKeywords.UseAlwaysAnalytic);
-                OperationalChannel = new PowerShellChannelWriter(PowerShellTraceChannel.Operational,
-                                                                keywords | PowerShellTraceKeywords.UseAlwaysOperational);
+                if (IsEtwSupported)
+                {
+                    DebugChannel = new PowerShellChannelWriter(PowerShellTraceChannel.Debug,
+                                                               keywords | PowerShellTraceKeywords.UseAlwaysDebug);
+                    AnalyticChannel = new PowerShellChannelWriter(PowerShellTraceChannel.Analytic,
+                                                                  keywords | PowerShellTraceKeywords.UseAlwaysAnalytic);
+                    OperationalChannel = new PowerShellChannelWriter(PowerShellTraceChannel.Operational,
+                                                                    keywords | PowerShellTraceKeywords.UseAlwaysOperational);
 
-                this.Task = task;
-                this.Keywords = keywords;
-            }
-            else
-            {
-                DebugChannel = NullWriter.Instance;
-                AnalyticChannel = NullWriter.Instance;
-                OperationalChannel = NullWriter.Instance;
+                    this.Task = task;
+                    this.Keywords = keywords;
+                }
+                else
+                {
+                    DebugChannel = NullWriter.Instance;
+                    AnalyticChannel = NullWriter.Instance;
+                    OperationalChannel = NullWriter.Instance;
+                }
             }
         }
 
@@ -966,14 +968,17 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         public void Dispose()
         {
-            if (!disposed)
+            if (Platform.IsWindows)
             {
-                disposed = true;
-                GC.SuppressFinalize(this);
+                if (!disposed)
+                {
+                    disposed = true;
+                    GC.SuppressFinalize(this);
 
-                DebugChannel.Dispose();
-                AnalyticChannel.Dispose();
-                OperationalChannel.Dispose();
+                    DebugChannel.Dispose();
+                    AnalyticChannel.Dispose();
+                    OperationalChannel.Dispose();
+                }
             }
         }
 
@@ -991,6 +996,11 @@ namespace System.Management.Automation.Tracing
         {
             get
             {
+                if (!Platform.IsWindows)
+                {
+                    return false;
+                }
+
                 return Environment.OSVersion.Version.Major >= 6;
             }
         }
@@ -1000,6 +1010,11 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         public bool TraceErrorRecord(ErrorRecord errorRecord)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             if (errorRecord != null)
             {
                 Exception exception = errorRecord.Exception;
@@ -1037,6 +1052,11 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         public bool TraceException(Exception exception)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             if (exception != null)
             {
                 string innerException = "None";
@@ -1062,6 +1082,11 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         public bool TracePowerShellObject(PSObject powerShellObject)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             return this.DebugChannel.TraceDebug(PowerShellTraceEvent.PowerShellObject,
                                                 PowerShellTraceOperationCode.Method, PowerShellTraceTask.None);
         }
@@ -1071,6 +1096,11 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         public bool TraceJob(Job job)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             if (job != null)
             {
                 return DebugChannel.TraceDebug(PowerShellTraceEvent.Job,
@@ -1093,6 +1123,11 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public bool WriteMessage(string message)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             return DebugChannel.TraceInformational(PowerShellTraceEvent.TraceMessage,
                                             PowerShellTraceOperationCode.None,
                                             PowerShellTraceTask.None, message);
@@ -1105,6 +1140,11 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public bool WriteMessage(string message1, string message2)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             return DebugChannel.TraceInformational(PowerShellTraceEvent.TraceMessage2,
                                             PowerShellTraceOperationCode.None,
                                             PowerShellTraceTask.None, message1, message2);
@@ -1117,6 +1157,11 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public bool WriteMessage(string message, Guid instanceId)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             return DebugChannel.TraceInformational(PowerShellTraceEvent.TraceMessageGuid,
                                             PowerShellTraceOperationCode.None,
                                             PowerShellTraceTask.None, message, instanceId);
@@ -1132,6 +1177,11 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public void WriteMessage(string className, string methodName, Guid workflowId, string message, params string[] parameters)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogAnalyticVerbose(PSEventId.Engine_Trace,
                                         PSOpcode.Method, PSTask.None,
                                         PSKeyword.UseAlwaysAnalytic,
@@ -1154,6 +1204,11 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public void WriteMessage(string className, string methodName, Guid workflowId, Job job, string message, params string[] parameters)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             StringBuilder sb = new StringBuilder();
 
             if (job != null)
@@ -1200,6 +1255,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteScheduledJobStartEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ScheduledJob_Start,
                                                PSOpcode.Method,
                                                PSTask.ScheduledJob,
@@ -1213,6 +1273,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteScheduledJobCompleteEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ScheduledJob_Complete,
                                                PSOpcode.Method,
                                                PSTask.ScheduledJob,
@@ -1226,6 +1291,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteScheduledJobErrorEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalError(PSEventId.ScheduledJob_Error,
                                          PSOpcode.Exception,
                                          PSTask.ScheduledJob,
@@ -1239,6 +1309,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEExecuteScriptEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEExecuteScript,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1252,6 +1327,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEExecuteSelectionEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEExecuteSelection,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1265,6 +1345,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEStopCommandEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEStopCommand,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1278,6 +1363,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEResumeDebuggerEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEResumeDebugger,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1291,6 +1381,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEStopDebuggerEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEStopDebugger,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1304,6 +1399,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEDebuggerStepIntoEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEDebuggerStepInto,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1317,6 +1417,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEDebuggerStepOverEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEDebuggerStepOver,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1330,6 +1435,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEDebuggerStepOutEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEDebuggerStepOut,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1343,6 +1453,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEEnableAllBreakpointsEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEEnableAllBreakpoints,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1356,6 +1471,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEDisableAllBreakpointsEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEDisableAllBreakpoints,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1369,6 +1489,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISERemoveAllBreakpointsEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISERemoveAllBreakpoints,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1382,6 +1507,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISESetBreakpointEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISESetBreakpoint,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1395,6 +1525,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISERemoveBreakpointEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISERemoveBreakpoint,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1408,6 +1543,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEEnableBreakpointEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEEnableBreakpoint,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1421,6 +1561,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEDisableBreakpointEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEDisableBreakpoint,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1434,6 +1579,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="args"></param>
         public void WriteISEHitBreakpointEvent(params object[] args)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogOperationalInformation(PSEventId.ISEHitBreakpoint,
                                                PSOpcode.Method,
                                                PSTask.ISEOperation,
@@ -1453,6 +1603,11 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public void WriteMessage(string className, string methodName, Guid workflowId, string activityName, Guid activityId, string message, params string[] parameters)
         {
+            if (!Platform.IsWindows)
+            {
+                return;
+            }
+
             PSEtwLog.LogAnalyticVerbose(PSEventId.Engine_Trace,
                                         PSOpcode.Method, PSTask.None,
                                         PSKeyword.UseAlwaysAnalytic,
@@ -1470,7 +1625,7 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public bool TraceWSManConnectionInfo(WSManConnectionInfo connectionInfo)
         {
-            return true;
+            return Platform.IsWindows;
         }
 
         /// <summary>
@@ -1535,5 +1690,3 @@ namespace System.Management.Automation.Tracing
     }
     // pragma warning restore 16001,16003
 }
-
-#endif

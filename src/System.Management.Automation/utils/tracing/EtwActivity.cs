@@ -285,6 +285,11 @@ namespace System.Management.Automation.Tracing
         /// was found to be same and set was not needed.</returns>
         public static bool SetActivityId(Guid activityId)
         {
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             if (GetActivityId() != activityId)
             {
                 EventProvider.SetActivityId(ref activityId);
@@ -300,7 +305,7 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public static Guid CreateActivityId()
         {
-            return EventProvider.CreateActivityId();
+            return Platform.IsWindows ? EventProvider.CreateActivityId() : Guid.Empty;
         }
 
         /// <summary>
@@ -311,7 +316,12 @@ namespace System.Management.Automation.Tracing
         public static Guid GetActivityId()
         {
             Guid activityId = Guid.Empty;
-            uint hresult = UnsafeNativeMethods.EventActivityIdControl(UnsafeNativeMethods.ActivityControlCode.Get, ref activityId);
+
+            if (Platform.IsWindows)
+            {
+                uint hresult = UnsafeNativeMethods.EventActivityIdControl(UnsafeNativeMethods.ActivityControlCode.Get, ref activityId);
+            }
+
             return activityId;
         }
 
@@ -468,6 +478,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="payload">Payload.</param>
         protected void WriteEvent(EventDescriptor ed, params object[] payload)
         {
+            if (!Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             EventProvider provider = GetProvider();
 
             if (!provider.IsEnabled())

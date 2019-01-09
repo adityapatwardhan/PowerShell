@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-#if !UNIX
-
 using System.Text;
 
 namespace System.Management.Automation.Tracing
@@ -17,6 +15,11 @@ namespace System.Management.Automation.Tracing
         [EtwEvent(0xc000)]
         public void DebugMessage(Exception exception)
         {
+            if (!Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             if (exception == null)
                 return;
 
@@ -30,6 +33,11 @@ namespace System.Management.Automation.Tracing
         /// <returns></returns>
         public static string GetExceptionString(Exception exception)
         {
+            if (!Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             if (exception == null)
                 return string.Empty;
 
@@ -56,5 +64,3 @@ namespace System.Management.Automation.Tracing
         }
     }
 }
-
-#endif
