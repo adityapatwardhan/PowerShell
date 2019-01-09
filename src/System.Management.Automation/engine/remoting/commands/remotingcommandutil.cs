@@ -81,10 +81,12 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         internal static void CheckRemotingCmdletPrerequisites()
         {
-#if UNIX
-            // TODO: check that PSRP requirements are installed
-            return;
-#else
+            if (!Platform.IsWindows)
+            {
+                // TODO: check that PSRP requirements are installed
+                return;
+            }
+
             bool notSupported = true;
             string WSManKeyPath = "Software\\Microsoft\\Windows\\CurrentVersion\\WSMAN\\";
 

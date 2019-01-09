@@ -50,20 +50,21 @@ namespace Microsoft.PowerShell {
         /// </summary>
         /// <param name="process"></param>
         /// <returns>The pid of the parent process.</returns>
-#if UNIX
         internal static int GetParentPid(Process process)
         {
-            return Platform.NonWindowsGetProcessParentPid(process.Id);
-        }
-#else
-        internal static int GetParentPid(Process process)
-        {
+            if (Platform.IsWindows)
+            {
             Diagnostics.Assert(process != null, "Ensure process is not null before calling");
             PROCESS_BASIC_INFORMATION pbi;
             int size;
             var res = NtQueryInformationProcess(process.Handle, 0, out pbi, Marshal.SizeOf<PROCESS_BASIC_INFORMATION>(), out size);
 
             return res != 0 ? InvalidProcessId : pbi.InheritedFromUniqueProcessId.ToInt32();
+            }
+            else
+            {
+                return Platform.NonWindowsGetProcessParentPid(process.Id);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -84,7 +85,5 @@ namespace Microsoft.PowerShell {
                 out PROCESS_BASIC_INFORMATION processInformation,
                 int processInformationLength,
                 out int returnLength);
-#endif
-
         }
 }

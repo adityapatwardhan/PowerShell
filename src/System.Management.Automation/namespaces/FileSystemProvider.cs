@@ -601,11 +601,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         protected override PSDriveInfo RemoveDrive(PSDriveInfo drive)
         {
-#if UNIX
-            return drive;
-#else
-            return WinRemoveDrive(drive);
-#endif
+            return Platform.IsWindows ? WinRemoveDrive(drive) : drive;
         }
 
         private PSDriveInfo WinRemoveDrive(PSDriveInfo drive)
@@ -674,11 +670,7 @@ namespace Microsoft.PowerShell.Commands
         /// <returns></returns>
         internal static string GetUNCForNetworkDrive(string driveName)
         {
-#if UNIX
-            return driveName;
-#else
-            return WinGetUNCForNetworkDrive(driveName);
-#endif
+            return Platform.IsWindows ? WinGetUNCForNetworkDrive(driveName) : driveName;
         }
 
         private static string WinGetUNCForNetworkDrive(string driveName)
@@ -733,11 +725,14 @@ namespace Microsoft.PowerShell.Commands
         /// <returns></returns>
         internal static string GetSubstitutedPathForNetworkDosDevice(string driveName)
         {
-#if UNIX
-            throw new PlatformNotSupportedException();
-#else
-            return WinGetSubstitutedPathForNetworkDosDevice(driveName);
-#endif
+            if (Platform.IsWindows)
+            {
+                return WinGetSubstitutedPathForNetworkDosDevice(driveName);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         private static string WinGetSubstitutedPathForNetworkDosDevice(string driveName)
@@ -911,11 +906,14 @@ namespace Microsoft.PowerShell.Commands
                             // the platform itself then has no real network drive support
                             // as required by this context. Solution: check for network
                             // drive support before using it.
-#if UNIX
-                            continue;
-#else
-                            displayRoot = GetRootPathForNetworkDriveOrDosDevice(newDrive);
-#endif
+                            if (!Platform.IsWindows)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                displayRoot = GetRootPathForNetworkDriveOrDosDevice(newDrive);
+                            }
                         }
 
                         if (newDrive.DriveType == DriveType.Fixed)
@@ -928,17 +926,18 @@ namespace Microsoft.PowerShell.Commands
                             root = newDrive.RootDirectory.FullName;
                         }
 
-#if UNIX
-                        // Porting notes: On platforms with single root filesystems, ensure
-                        // that we add a filesystem with the root "/" to the initial drive list,
-                        // otherwise path handling will not work correctly because there
-                        // is no : available to separate the filesystems from each other
-                        if (root != StringLiterals.DefaultPathSeparatorString
-                            && newDriveName == StringLiterals.DefaultPathSeparatorString)
+                        if (!Platform.IsWindows)
                         {
-                            root = StringLiterals.DefaultPathSeparatorString;
+                            // Porting notes: On platforms with single root filesystems, ensure
+                            // that we add a filesystem with the root "/" to the initial drive list,
+                            // otherwise path handling will not work correctly because there
+                            // is no : available to separate the filesystems from each other
+                            if (root != StringLiterals.DefaultPathSeparatorString
+                                && newDriveName == StringLiterals.DefaultPathSeparatorString)
+                            {
+                                root = StringLiterals.DefaultPathSeparatorString;
+                            }
                         }
-#endif
 
                         // Porting notes: On non-windows platforms .net can report two
                         // drives with the same root, make sure to only add one of those
@@ -1304,38 +1303,42 @@ namespace Microsoft.PowerShell.Commands
             {
                 var invokeProcess = new System.Diagnostics.Process();
                 invokeProcess.StartInfo.FileName = path;
-#if UNIX
-                bool useShellExecute = false;
-                if (Directory.Exists(path))
+
+                if (!Platform.IsWindows)
                 {
-                    // Path points to a directory. We have to use xdg-open/open on Linux/macOS.
-                    useShellExecute = true;
+                    bool useShellExecute = false;
+                    if (Directory.Exists(path))
+                    {
+                        // Path points to a directory. We have to use xdg-open/open on Linux/macOS.
+                        useShellExecute = true;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            // Try Process.Start first. This works for executables on Win/Unix platforms
+                            invokeProcess.Start();
+                        }
+                        catch (Win32Exception ex) when (ex.NativeErrorCode == 13)
+                        {
+                            // Error code 13 -- Permission denied
+                            // The file is possibly not an executable. We try xdg-open/open on Linux/macOS.
+                            useShellExecute = true;
+                        }
+                    }
+
+                    if (useShellExecute)
+                    {
+                        invokeProcess.StartInfo.UseShellExecute = true;
+                        invokeProcess.Start();
+                    }
                 }
                 else
                 {
-                    try
-                    {
-                        // Try Process.Start first. This works for executables on Win/Unix platforms
-                        invokeProcess.Start();
-                    }
-                    catch (Win32Exception ex) when (ex.NativeErrorCode == 13)
-                    {
-                        // Error code 13 -- Permission denied
-                        // The file is possibly not an executable. We try xdg-open/open on Linux/macOS.
-                        useShellExecute = true;
-                    }
-                }
-
-                if (useShellExecute)
-                {
-                    invokeProcess.StartInfo.UseShellExecute = true;
+                    // Use ShellExecute when it's not a headless SKU
+                    invokeProcess.StartInfo.UseShellExecute = Platform.IsWindowsDesktop;
                     invokeProcess.Start();
                 }
-#else
-                // Use ShellExecute when it's not a headless SKU
-                invokeProcess.StartInfo.UseShellExecute = Platform.IsWindowsDesktop;
-                invokeProcess.Start();
-#endif
             }
         }
 
@@ -2227,19 +2230,11 @@ namespace Microsoft.PowerShell.Commands
 
                     if (itemType == ItemType.SymbolicLink)
                     {
-#if UNIX
-                        success = Platform.NonWindowsCreateSymbolicLink(path, strTargetPath);
-#else
-                        success = WinCreateSymbolicLink(path, strTargetPath, isDirectory);
-#endif
+                        success = Platform.IsWindows ? WinCreateSymbolicLink(path, strTargetPath, isDirectory) : Platform.NonWindowsCreateSymbolicLink(path, strTargetPath);
                     }
                     else if (itemType == ItemType.HardLink)
                     {
-#if UNIX
-                        success = Platform.NonWindowsCreateHardLink(path, strTargetPath);
-#else
-                        success = WinCreateHardLink(path, strTargetPath);
-#endif
+                        success = Platform.IsWindows ? WinCreateHardLink(path, strTargetPath) : Platform.NonWindowsCreateHardLink(path, strTargetPath);
                     }
 
                     if (!success)
@@ -2249,11 +2244,9 @@ namespace Microsoft.PowerShell.Commands
 
                         Win32Exception w32Exception = new Win32Exception((int)errorCode);
 
-#if UNIX
-                        if (Platform.Unix.GetErrorCategory(errorCode) == ErrorCategory.PermissionDenied)
-#else
-                        if (errorCode == 1314) // ERROR_PRIVILEGE_NOT_HELD
-#endif
+                        bool isError = Platform.IsWindows ? (errorCode == 1314) : (Platform.Unix.GetErrorCategory(errorCode) == ErrorCategory.PermissionDenied);
+
+                        if (isError)
                         {
                             string message = FileSystemProviderStrings.ElevationRequired;
                             WriteError(new ErrorRecord(new UnauthorizedAccessException(message, w32Exception), "NewItemSymbolicLinkElevationRequired", ErrorCategory.PermissionDenied, value.ToString()));
@@ -2727,67 +2720,70 @@ namespace Microsoft.PowerShell.Commands
                     return;
                 }
 
-#if UNIX
-                if (iscontainer)
+                if (!Platform.IsWindows)
                 {
-                    RemoveDirectoryInfoItem((DirectoryInfo)fsinfo, recurse, Force, true);
-                }
-                else
-                {
-                    RemoveFileInfoItem((FileInfo)fsinfo, Force);
-                }
-#else
-                if ((!removeStreams) && iscontainer)
-                {
-                    RemoveDirectoryInfoItem((DirectoryInfo)fsinfo, recurse, Force, true);
-                }
-                else
-                {
-                    // If we want to remove the file streams, retrieve them and remove them.
-                    if (removeStreams)
+                    if (iscontainer)
                     {
-                        foreach (string desiredStream in dynamicParameters.Stream)
-                        {
-                            // See that it matches the name specified
-                            WildcardPattern p = WildcardPattern.Get(desiredStream, WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant);
-                            bool foundStream = false;
-
-                            foreach (AlternateStreamData stream in AlternateDataStreamUtilities.GetStreams(fsinfo.FullName))
-                            {
-                                if (!p.IsMatch(stream.Stream)) { continue; }
-
-                                foundStream = true;
-
-                                string action = string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    FileSystemProviderStrings.StreamAction,
-                                    stream.Stream, fsinfo.FullName);
-                                if (ShouldProcess(action))
-                                {
-                                    AlternateDataStreamUtilities.DeleteFileStream(fsinfo.FullName, stream.Stream);
-                                }
-                            }
-
-                            if ((!WildcardPattern.ContainsWildcardCharacters(desiredStream)) && (!foundStream))
-                            {
-                                string errorMessage = StringUtil.Format(
-                                    FileSystemProviderStrings.AlternateDataStreamNotFound, desiredStream, fsinfo.FullName);
-                                Exception e = new FileNotFoundException(errorMessage, fsinfo.FullName);
-
-                                WriteError(new ErrorRecord(
-                                    e,
-                                    "AlternateDataStreamNotFound",
-                                    ErrorCategory.ObjectNotFound,
-                                    path));
-                            }
-                        }
+                        RemoveDirectoryInfoItem((DirectoryInfo)fsinfo, recurse, Force, true);
                     }
                     else
                     {
                         RemoveFileInfoItem((FileInfo)fsinfo, Force);
                     }
                 }
-#endif
+                else
+                {
+                    if ((!removeStreams) && iscontainer)
+                    {
+                        RemoveDirectoryInfoItem((DirectoryInfo)fsinfo, recurse, Force, true);
+                    }
+                    else
+                    {
+                        // If we want to remove the file streams, retrieve them and remove them.
+                        if (removeStreams)
+                        {
+                            foreach (string desiredStream in dynamicParameters.Stream)
+                            {
+                                // See that it matches the name specified
+                                WildcardPattern p = WildcardPattern.Get(desiredStream, WildcardOptions.IgnoreCase | WildcardOptions.CultureInvariant);
+                                bool foundStream = false;
+
+                                foreach (AlternateStreamData stream in AlternateDataStreamUtilities.GetStreams(fsinfo.FullName))
+                                {
+                                    if (!p.IsMatch(stream.Stream)) { continue; }
+
+                                    foundStream = true;
+
+                                    string action = string.Format(
+                                        CultureInfo.InvariantCulture,
+                                        FileSystemProviderStrings.StreamAction,
+                                        stream.Stream, fsinfo.FullName);
+                                    if (ShouldProcess(action))
+                                    {
+                                        AlternateDataStreamUtilities.DeleteFileStream(fsinfo.FullName, stream.Stream);
+                                    }
+                                }
+
+                                if ((!WildcardPattern.ContainsWildcardCharacters(desiredStream)) && (!foundStream))
+                                {
+                                    string errorMessage = StringUtil.Format(
+                                        FileSystemProviderStrings.AlternateDataStreamNotFound, desiredStream, fsinfo.FullName);
+                                    Exception e = new FileNotFoundException(errorMessage, fsinfo.FullName);
+
+                                    WriteError(new ErrorRecord(
+                                        e,
+                                        "AlternateDataStreamNotFound",
+                                        ErrorCategory.ObjectNotFound,
+                                        path));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            RemoveFileInfoItem((FileInfo)fsinfo, Force);
+                        }
+                    }
+                }
             }
             catch (IOException exception)
             {
@@ -4890,49 +4886,52 @@ namespace Microsoft.PowerShell.Commands
                                 return string.Empty;
                             }
 
-#if UNIX
-                            // We don't use the Directory.EnumerateFiles() for Unix because the path
-                            // may contain additional globbing patterns such as '[ab]'
-                            // which Directory.EnumerateFiles() processes, giving undesireable
-                            // results in this context.
-                            if (!File.Exists(result) && !Directory.Exists(result))
+                            if (!Platform.IsWindows)
                             {
-                                string error = StringUtil.Format(FileSystemProviderStrings.ItemDoesNotExist, path);
-                                Exception e = new IOException(error);
-                                WriteError(new ErrorRecord(
-                                    e,
-                                    "ItemDoesNotExist",
-                                    ErrorCategory.ObjectNotFound,
-                                    path));
-                                break;
+                                // We don't use the Directory.EnumerateFiles() for Unix because the path
+                                // may contain additional globbing patterns such as '[ab]'
+                                // which Directory.EnumerateFiles() processes, giving undesireable
+                                // results in this context.
+                                if (!File.Exists(result) && !Directory.Exists(result))
+                                {
+                                    string error = StringUtil.Format(FileSystemProviderStrings.ItemDoesNotExist, path);
+                                    Exception e = new IOException(error);
+                                    WriteError(new ErrorRecord(
+                                        e,
+                                        "ItemDoesNotExist",
+                                        ErrorCategory.ObjectNotFound,
+                                        path));
+                                    break;
+                                }
                             }
-#else
-                            string leafName = GetChildName(result);
-
-                            // Use the Directory class to get the real path (this will
-                            // ensure the proper casing
-
-                            IEnumerable<string> files = Directory.EnumerateFiles(directoryPath, leafName);
-
-                            if (files == null || !files.Any())
+                            else
                             {
-                                files = Directory.EnumerateDirectories(directoryPath, leafName);
-                            }
+                                string leafName = GetChildName(result);
 
-                            if (files == null || !files.Any())
-                            {
-                                string error = StringUtil.Format(FileSystemProviderStrings.ItemDoesNotExist, path);
-                                Exception e = new IOException(error);
-                                WriteError(new ErrorRecord(
-                                    e,
-                                    "ItemDoesNotExist",
-                                    ErrorCategory.ObjectNotFound,
-                                    path));
-                                break;
-                            }
+                                // Use the Directory class to get the real path (this will
+                                // ensure the proper casing
 
-                            result = files.First();
-#endif
+                                IEnumerable<string> files = Directory.EnumerateFiles(directoryPath, leafName);
+
+                                if (files == null || !files.Any())
+                                {
+                                    files = Directory.EnumerateDirectories(directoryPath, leafName);
+                                }
+
+                                if (files == null || !files.Any())
+                                {
+                                    string error = StringUtil.Format(FileSystemProviderStrings.ItemDoesNotExist, path);
+                                    Exception e = new IOException(error);
+                                    WriteError(new ErrorRecord(
+                                        e,
+                                        "ItemDoesNotExist",
+                                        ErrorCategory.ObjectNotFound,
+                                        path));
+                                    break;
+                                }
+
+                                result = files.First();
+                            }
 
                             if (result.StartsWith(basePath, StringComparison.CurrentCulture))
                             {
@@ -6846,11 +6845,12 @@ namespace Microsoft.PowerShell.Commands
         /// <returns></returns>
         internal static bool PathIsNetworkPath(string path)
         {
-#if UNIX
-            return false;
-#else
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             return WinPathIsNetworkPath(path);
-#endif
         }
 
         internal static bool WinPathIsNetworkPath(string path)
@@ -7739,76 +7739,80 @@ namespace Microsoft.PowerShell.Commands
         private static List<string> InternalGetTarget(string filePath)
         {
             var links = new List<string>();
-#if UNIX
-            string link = Platform.NonWindowsInternalGetTarget(filePath);
-            if (!string.IsNullOrEmpty(link))
+
+            if (!Platform.IsWindows)
             {
-                links.Add(link);
-            }
-            else
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-#elif !CORECLR // FindFirstFileName, FindNextFileName and FindClose are not available on Core Clr
-            UInt32 linkStringLength = 0;
-            var linkName = new StringBuilder();
-
-            // First get the length for the linkName buffer.
-            IntPtr fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
-            int lastError = Marshal.GetLastWin32Error();
-
-            // Return handle is INVALID_HANDLE_VALUE and LastError was ERROR_MORE_DATA
-            if ((fileHandle == (IntPtr)(-1)) && (lastError == 234))
-            {
-                linkName = new StringBuilder((int)linkStringLength);
-                fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
-                lastError = Marshal.GetLastWin32Error();
-            }
-
-            if (fileHandle == (IntPtr)(-1))
-            {
-                throw new Win32Exception(lastError);
-            }
-
-            bool continueFind = false;
-
-            try
-            {
-                do
+                string link = Platform.NonWindowsInternalGetTarget(filePath);
+                if (!string.IsNullOrEmpty(link))
                 {
-                    StringBuilder fullName = new StringBuilder();
-                    fullName.Append(Path.GetPathRoot(filePath));    // hard link source and target must be on the same drive. So we can use the source for find the path root.
-                    fullName.Append(linkName.ToString());
-                    FileInfo fInfo = new FileInfo(fullName.ToString());
-
-                    // Don't add the target link to the list.
-
-                    if (string.Compare(fInfo.FullName, filePath, StringComparison.OrdinalIgnoreCase) != 0)
-                        links.Add(fInfo.FullName);
-
-                    continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
-
-                    lastError = Marshal.GetLastWin32Error();
-
-                    if (!continueFind && lastError == 234) // ERROR_MORE_DATA
-                    {
-                        linkName = new StringBuilder((int)linkStringLength);
-                        continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
-                    }
-
-                    if (!continueFind && lastError != 38) // ERROR_HANDLE_EOF. No more links.
-                    {
-                        throw new Win32Exception(lastError);
-                    }
+                    links.Add(link);
                 }
-                while (continueFind);
+                else
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
             }
-            finally
+            else if (!Platform.IsCoreCLR) // FindFirstFileName, FindNextFileName and FindClose are not available on Core Clr
             {
-                InternalSymbolicLinkLinkCodeMethods.FindClose(fileHandle);
+                UInt32 linkStringLength = 0;
+                var linkName = new StringBuilder();
+
+                // First get the length for the linkName buffer.
+                IntPtr fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
+                int lastError = Marshal.GetLastWin32Error();
+
+                // Return handle is INVALID_HANDLE_VALUE and LastError was ERROR_MORE_DATA
+                if ((fileHandle == (IntPtr)(-1)) && (lastError == 234))
+                {
+                    linkName = new StringBuilder((int)linkStringLength);
+                    fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
+                    lastError = Marshal.GetLastWin32Error();
+                }
+
+                if (fileHandle == (IntPtr)(-1))
+                {
+                    throw new Win32Exception(lastError);
+                }
+
+                bool continueFind = false;
+
+                try
+                {
+                    do
+                    {
+                        StringBuilder fullName = new StringBuilder();
+                        fullName.Append(Path.GetPathRoot(filePath));    // hard link source and target must be on the same drive. So we can use the source for find the path root.
+                        fullName.Append(linkName.ToString());
+                        FileInfo fInfo = new FileInfo(fullName.ToString());
+
+                        // Don't add the target link to the list.
+
+                        if (string.Compare(fInfo.FullName, filePath, StringComparison.OrdinalIgnoreCase) != 0)
+                            links.Add(fInfo.FullName);
+
+                        continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
+
+                        lastError = Marshal.GetLastWin32Error();
+
+                        if (!continueFind && lastError == 234) // ERROR_MORE_DATA
+                        {
+                            linkName = new StringBuilder((int)linkStringLength);
+                            continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
+                        }
+
+                        if (!continueFind && lastError != 38) // ERROR_HANDLE_EOF. No more links.
+                        {
+                            throw new Win32Exception(lastError);
+                        }
+                    }
+                    while (continueFind);
+                }
+                finally
+                {
+                    InternalSymbolicLinkLinkCodeMethods.FindClose(fileHandle);
+                }
             }
-#endif
+
             return links;
         }
 
@@ -7891,11 +7895,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal static bool IsHardLink(FileSystemInfo fileInfo)
         {
-#if UNIX
-            return Platform.NonWindowsIsHardLink(fileInfo);
-#else
-            return WinIsHardLink(fileInfo);
-#endif
+            return Platform.IsWindows ? WinIsHardLink(fileInfo) : Platform.NonWindowsIsHardLink(fileInfo);
         }
 
         internal static bool IsReparsePoint(FileSystemInfo fileInfo)
@@ -7951,11 +7951,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal static bool IsSameFileSystemItem(string pathOne, string pathTwo)
         {
-#if UNIX
-            return Platform.NonWindowsIsSameFileSystemItem(pathOne, pathTwo);
-#else
-            return WinIsSameFileSystemItem(pathOne, pathTwo);
-#endif
+            return Platform.IsWindows ? WinIsSameFileSystemItem(pathOne, pathTwo) : Platform.NonWindowsIsSameFileSystemItem(pathOne, pathTwo);
         }
 
 #if !UNIX
@@ -7989,12 +7985,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal static bool GetInodeData(string path, out System.ValueTuple<UInt64, UInt64> inodeData)
         {
-#if UNIX
-            bool rv = Platform.NonWindowsGetInodeData(path, out inodeData);
-#else
-            bool rv = WinGetInodeData(path, out inodeData);
-#endif
-            return rv;
+            return Platform.IsWindows ? WinGetInodeData(path, out inodeData) : Platform.NonWindowsGetInodeData(path, out inodeData);
         }
 
 #if !UNIX
@@ -8029,11 +8020,7 @@ namespace Microsoft.PowerShell.Commands
 #endif
         internal static bool IsHardLink(ref IntPtr handle)
         {
-#if UNIX
-            return Platform.NonWindowsIsHardLink(ref handle);
-#else
-            return WinIsHardLink(ref handle);
-#endif
+            return Platform.IsWindows ? WinIsHardLink(ref handle) : Platform.NonWindowsIsHardLink(ref handle);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods")]
@@ -8193,11 +8180,14 @@ namespace Microsoft.PowerShell.Commands
 
         private static SafeFileHandle OpenReparsePoint(string reparsePoint, FileDesiredAccess accessMode)
         {
-#if UNIX
-            throw new PlatformNotSupportedException();
-#else
-            return WinOpenReparsePoint(reparsePoint, accessMode);
-#endif
+            if (Platform.IsWindows)
+            {
+                return WinOpenReparsePoint(reparsePoint, accessMode);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         private static SafeFileHandle WinOpenReparsePoint(string reparsePoint, FileDesiredAccess accessMode)

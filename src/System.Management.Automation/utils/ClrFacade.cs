@@ -107,12 +107,16 @@ namespace System.Management.Automation
             {
                 // load all available encodings
                 EncodingRegisterProvider();
-#if UNIX
-                s_oemEncoding = new UTF8Encoding(false);
-#else
-                uint oemCp = NativeMethods.GetOEMCP();
-                s_oemEncoding = Encoding.GetEncoding((int)oemCp);
-#endif
+
+                if (!Platform.IsWindows)
+                {
+                    s_oemEncoding = new UTF8Encoding(false);
+                }
+                else
+                {
+                    uint oemCp = NativeMethods.GetOEMCP();
+                    s_oemEncoding = Encoding.GetEncoding((int)oemCp);
+                }
             }
 
             return s_oemEncoding;

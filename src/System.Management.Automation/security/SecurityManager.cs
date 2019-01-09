@@ -402,9 +402,11 @@ namespace Microsoft.PowerShell
 
         private bool IsLocalFile(string filename)
         {
-#if UNIX
-            return true;
-#else
+            if (!Platform.IsWindows)
+            {
+                return true;
+            }
+
             SecurityZone zone = ClrFacade.GetFileSecurityZone(filename);
 
             if (zone == SecurityZone.MyComputer ||
@@ -415,7 +417,6 @@ namespace Microsoft.PowerShell
             }
 
             return false;
-#endif
         }
 
         // Checks that a publisher is trusted by the system or is one of

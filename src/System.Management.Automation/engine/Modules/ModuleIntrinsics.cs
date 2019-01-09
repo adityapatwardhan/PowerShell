@@ -691,11 +691,8 @@ namespace System.Management.Automation
                 return false;
             }
 
-#if UNIX
-            StringComparison strcmp = StringComparison.Ordinal;
-#else
-            StringComparison strcmp = StringComparison.OrdinalIgnoreCase;
-#endif
+
+            StringComparison strcmp = Platform.IsWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
             // We must check modulePath (e.g. /path/to/module/module.psd1) against several possibilities:
             // 1. "/path/to/module"                 - Module dir path
@@ -951,11 +948,14 @@ namespace System.Management.Automation
         /// <returns>Personal module path.</returns>
         internal static string GetPersonalModulePath()
         {
-#if UNIX
-            return Platform.SelectProductNameForDirectory(Platform.XDG_Type.USER_MODULES);
-#else
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Utils.ModuleDirectory);
-#endif
+            if (!Platform.IsWindows)
+            {
+                return Platform.SelectProductNameForDirectory(Platform.XDG_Type.USER_MODULES);
+            }
+            else
+            {
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Utils.ModuleDirectory);
+            }
         }
 
         /// <summary>
@@ -1003,18 +1003,21 @@ namespace System.Management.Automation
         /// <returns></returns>
         private static string GetSharedModulePath()
         {
-#if UNIX
-            return Platform.SelectProductNameForDirectory(Platform.XDG_Type.SHARED_MODULES);
-#else
-            string sharedModulePath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-
-            if (!string.IsNullOrEmpty(sharedModulePath))
+            if (!Platform.IsWindows)
             {
-                sharedModulePath = Path.Combine(sharedModulePath, Utils.ModuleDirectory);
+                return Platform.SelectProductNameForDirectory(Platform.XDG_Type.SHARED_MODULES);
             }
+            else
+            {
+                string sharedModulePath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
 
-            return sharedModulePath;
-#endif
+                if (!string.IsNullOrEmpty(sharedModulePath))
+                {
+                    sharedModulePath = Path.Combine(sharedModulePath, Utils.ModuleDirectory);
+                }
+
+                return sharedModulePath;
+            }
         }
 
 #if !UNIX
@@ -1158,9 +1161,11 @@ namespace System.Management.Automation
         /// </summary>
         private static bool NeedToClearProcessModulePath(string currentProcessModulePath, string personalModulePath, string sharedModulePath)
         {
-#if UNIX
-            return false;
-#else
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             Dbg.Assert(!string.IsNullOrEmpty(personalModulePath), "caller makes sure personalModulePath not null or empty");
             Dbg.Assert(sharedModulePath != null, "caller makes sure sharedModulePath is not null");
 
@@ -1180,7 +1185,6 @@ namespace System.Management.Automation
                    (!string.IsNullOrEmpty(hkcuModulePath) && currentProcessModulePath.IndexOf(hkcuModulePath, StringComparison.OrdinalIgnoreCase) != -1) ||
                    currentProcessModulePath.IndexOf(legacyPersonalModulePath, StringComparison.OrdinalIgnoreCase) != -1 ||
                    currentProcessModulePath.IndexOf(legacyProgramFilesModulePath, StringComparison.OrdinalIgnoreCase) != -1;
-#endif
         }
 
         /// <summary>
@@ -1190,11 +1194,8 @@ namespace System.Management.Automation
         /// </summary>
         private static string RemoveSxSPsHomeModulePath(string currentProcessModulePath, string personalModulePath, string sharedModulePath, string psHomeModulePath)
         {
-#if UNIX
-            const string powershellExeName = "pwsh";
-#else
-            const string powershellExeName = "pwsh.exe";
-#endif
+            private readonly string powershellExeName = Platform.IsWindows ? "pwsh.exe" : "pwsh";
+
             const string powershellDepsName = "pwsh.deps.json";
 
             StringBuilder modulePathString = new StringBuilder(currentProcessModulePath.Length);

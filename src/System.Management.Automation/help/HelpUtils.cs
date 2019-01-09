@@ -19,12 +19,16 @@ namespace System.Management.Automation
         {
             if (userHomeHelpPath == null)
             {
-#if UNIX
-                var userModuleFolder = Platform.SelectProductNameForDirectory(Platform.XDG_Type.USER_MODULES);
-                string userScopeRootPath = System.IO.Path.GetDirectoryName(userModuleFolder);
-#else
-                string userScopeRootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PowerShell");
-#endif
+                if (!Platform.IsWindows)
+                {
+                    var userModuleFolder = Platform.SelectProductNameForDirectory(Platform.XDG_Type.USER_MODULES);
+                    string userScopeRootPath = System.IO.Path.GetDirectoryName(userModuleFolder);
+                }
+                else
+                {
+                    string userScopeRootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PowerShell");
+                }
+
                 userHomeHelpPath = Path.Combine(userScopeRootPath, "Help");
             }
 

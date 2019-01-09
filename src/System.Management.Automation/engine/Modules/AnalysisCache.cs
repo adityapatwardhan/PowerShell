@@ -170,9 +170,11 @@ namespace System.Management.Automation
         /// <returns></returns>
         internal static bool ModuleIsEditionIncompatible(string modulePath, Hashtable moduleManifestProperties)
         {
-#if UNIX
-            return false;
-#else
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             if (!ModuleUtils.IsOnSystem32ModulePath(modulePath))
             {
                 return false;
@@ -184,7 +186,6 @@ namespace System.Management.Automation
             }
 
             return !Utils.IsPSEditionSupported(LanguagePrimitives.ConvertTo<string[]>(moduleManifestProperties["CompatiblePSEditions"]));
-#endif
         }
 
         internal static bool ModuleAnalysisViaGetModuleRequired(object modulePathObj, bool hadCmdlets, bool hadFunctions, bool hadAliases)
@@ -1108,11 +1109,14 @@ namespace System.Management.Automation
                 cacheFileName = string.Format(CultureInfo.InvariantCulture, "{0}-{1}", cacheFileName, hashString);
             }
 
-#if UNIX
-            s_cacheStoreLocation = Path.Combine(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE), cacheFileName);
-#else
-            s_cacheStoreLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\PowerShell", cacheFileName);
-#endif
+            if (!Platform.IsWindows)
+            {
+                s_cacheStoreLocation = Path.Combine(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE), cacheFileName);
+            }
+            else
+            {
+                s_cacheStoreLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\PowerShell", cacheFileName);
+            }
         }
     }
 

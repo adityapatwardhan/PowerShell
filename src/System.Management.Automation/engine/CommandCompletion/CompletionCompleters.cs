@@ -4478,35 +4478,38 @@ namespace System.Management.Automation
 
         internal static List<string> GetFileShares(string machine, bool ignoreHidden)
         {
-#if UNIX
-            return new List<string>();
-#else
-            IntPtr shBuf;
-            uint numEntries;
-            uint totalEntries;
-            uint resumeHandle = 0;
-            int result = NetShareEnum(machine, 1, out shBuf,
-                                        MAX_PREFERRED_LENGTH, out numEntries, out totalEntries,
-                                        ref resumeHandle);
-
-            var shares = new List<string>();
-            if (result == NERR_Success || result == ERROR_MORE_DATA)
+            if (!Platform.IsWindows)
             {
-                for (int i = 0; i < numEntries; ++i)
-                {
-                    IntPtr curInfoPtr = (IntPtr)((long)shBuf + (Marshal.SizeOf<SHARE_INFO_1>() * i));
-                    SHARE_INFO_1 shareInfo = Marshal.PtrToStructure<SHARE_INFO_1>(curInfoPtr);
-
-                    if ((shareInfo.type & STYPE_MASK) != STYPE_DISKTREE)
-                        continue;
-                    if (ignoreHidden && shareInfo.netname.EndsWith("$", StringComparison.Ordinal))
-                        continue;
-                    shares.Add(shareInfo.netname);
-                }
+                return new List<string>();
             }
+            else
+            {
+                IntPtr shBuf;
+                uint numEntries;
+                uint totalEntries;
+                uint resumeHandle = 0;
+                int result = NetShareEnum(machine, 1, out shBuf,
+                                            MAX_PREFERRED_LENGTH, out numEntries, out totalEntries,
+                                            ref resumeHandle);
 
-            return shares;
-#endif
+                var shares = new List<string>();
+                if (result == NERR_Success || result == ERROR_MORE_DATA)
+                {
+                    for (int i = 0; i < numEntries; ++i)
+                    {
+                        IntPtr curInfoPtr = (IntPtr)((long)shBuf + (Marshal.SizeOf<SHARE_INFO_1>() * i));
+                        SHARE_INFO_1 shareInfo = Marshal.PtrToStructure<SHARE_INFO_1>(curInfoPtr);
+
+                        if ((shareInfo.type & STYPE_MASK) != STYPE_DISKTREE)
+                            continue;
+                        if (ignoreHidden && shareInfo.netname.EndsWith("$", StringComparison.Ordinal))
+                            continue;
+                        shares.Add(shareInfo.netname);
+                    }
+                }
+
+                return shares;
+            }
         }
 
         private static bool CheckFileExtension(string path, HashSet<string> extension)

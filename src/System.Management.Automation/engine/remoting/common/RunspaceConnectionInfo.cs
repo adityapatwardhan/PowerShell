@@ -2059,11 +2059,9 @@ namespace System.Management.Automation.Runspaces
             out StreamReader stdErrReaderVar)
         {
             string filePath = string.Empty;
-#if UNIX
-            string sshCommand = "ssh";
-#else
-            string sshCommand = "ssh.exe";
-#endif
+
+            string sshCommand = Platform.IsWindows ? "ssh.exe" : "ssh";
+
             var context = Runspaces.LocalPipeline.GetExecutionContextFromTLS();
             if (context != null)
             {
@@ -2127,11 +2125,7 @@ namespace System.Management.Automation.Runspaces
 
         private string GetCurrentUserName()
         {
-#if UNIX
-            return System.Environment.GetEnvironmentVariable("USER") ?? string.Empty;
-#else
-            return System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-#endif
+            return Platform.IsWindows ? System.Security.Principal.WindowsIdentity.GetCurrent().Name : System.Environment.GetEnvironmentVariable("USER") ?? string.Empty;
         }
 
         #endregion

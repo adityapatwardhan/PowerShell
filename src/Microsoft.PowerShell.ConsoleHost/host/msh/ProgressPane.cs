@@ -77,59 +77,62 @@ namespace Microsoft.PowerShell
                 _savedCursor = _rawui.CursorPosition;
                 _location.X = 0;
 
-#if UNIX
-                _location.Y = _rawui.CursorPosition.Y;
-
-                // if cursor is not on left edge already move down one line
-                if (_rawui.CursorPosition.X != 0)
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {
-                    _location.Y++;
+                    _location.Y = _rawui.CursorPosition.Y;
+
+                    // if cursor is not on left edge already move down one line
+                    if (_rawui.CursorPosition.X != 0)
+                    {
+                        _location.Y++;
+                        _rawui.CursorPosition = _location;
+                    }
+
+                    // if the cursor is at the bottom, create screen buffer space by scrolling
+                    int scrollRows = rows - ((_rawui.BufferSize.Height - 1) - _location.Y);
+                    if (scrollRows > 0)
+                    {
+                        // Scroll the console screen up by 'scrollRows'
+                        var bottomLocation = _location;
+                        bottomLocation.Y = _rawui.BufferSize.Height;
+                        _rawui.CursorPosition = bottomLocation;
+                        for (int i = 0; i < scrollRows; i++)
+                        {
+                            Console.Out.Write('\n');
+                        }
+
+                        _location.Y -= scrollRows;
+                        _savedCursor.Y -= scrollRows;
+                    }
+
+                    // create cleared region to clear progress bar later
+                    _savedRegion = tempProgressRegion;
+                    for (int row = 0; row < rows; row++)
+                    {
+                        for (int col = 0; col < cols; col++)
+                        {
+                            _savedRegion[row, col].Character = ' ';
+                        }
+                    }
+
+                    // put cursor back to where output should be
                     _rawui.CursorPosition = _location;
                 }
-
-                // if the cursor is at the bottom, create screen buffer space by scrolling
-                int scrollRows = rows - ((_rawui.BufferSize.Height - 1) - _location.Y);
-                if (scrollRows > 0)
+                else
                 {
-                    // Scroll the console screen up by 'scrollRows'
-                    var bottomLocation = _location;
-                    bottomLocation.Y = _rawui.BufferSize.Height;
-                    _rawui.CursorPosition = bottomLocation;
-                    for (int i = 0; i < scrollRows; i++)
-                    {
-                        Console.Out.Write('\n');
-                    }
+                    _location = _rawui.WindowPosition;
 
-                    _location.Y -= scrollRows;
-                    _savedCursor.Y -= scrollRows;
+                    // We have to show the progress pane in the first column, as the screen buffer at any point might contain
+                    // a CJK double-cell characters, which makes it impractical to try to find a position where the pane would
+                    // not slice a character.  Column 0 is the only place where we know for sure we can place the pane.
+
+                    _location.Y = Math.Min(_location.Y + 2, _bufSize.Height);
+
+                    // Save off the current contents of the screen buffer in the region that we will occupy
+                    _savedRegion =
+                        _rawui.GetBufferContents(
+                            new Rectangle(_location.X, _location.Y, _location.X + cols - 1, _location.Y + rows - 1));
                 }
-
-                // create cleared region to clear progress bar later
-                _savedRegion = tempProgressRegion;
-                for(int row = 0; row < rows; row++)
-                {
-                    for(int col = 0; col < cols; col++)
-                    {
-                        _savedRegion[row, col].Character = ' ';
-                    }
-                }
-
-                // put cursor back to where output should be
-                _rawui.CursorPosition = _location;
-#else
-                _location = _rawui.WindowPosition;
-
-                // We have to show the progress pane in the first column, as the screen buffer at any point might contain
-                // a CJK double-cell characters, which makes it impractical to try to find a position where the pane would
-                // not slice a character.  Column 0 is the only place where we know for sure we can place the pane.
-
-                _location.Y = Math.Min(_location.Y + 2, _bufSize.Height);
-
-                // Save off the current contents of the screen buffer in the region that we will occupy
-                _savedRegion =
-                    _rawui.GetBufferContents(
-                        new Rectangle(_location.X, _location.Y, _location.X + cols - 1, _location.Y + rows - 1));
-#endif
 
                 // replace the saved region in the screen buffer with our progress display
                 _rawui.SetBufferContents(_location, tempProgressRegion);

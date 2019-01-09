@@ -1298,9 +1298,10 @@ namespace System.Management.Automation
         // Otherwise, use the platform library to check executability
         private bool IsExecutable(string path)
         {
-#if UNIX
-            return Platform.NonWindowsIsExecutable(this.Path);
-#else
+            if (!Platform.IsWindows)
+            {
+                return Platform.NonWindowsIsExecutable(this.Path);
+            }
 
             string myExtension = System.IO.Path.GetExtension(path);
 

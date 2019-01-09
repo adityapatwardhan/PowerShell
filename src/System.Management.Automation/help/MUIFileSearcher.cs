@@ -115,7 +115,11 @@ namespace System.Management.Automation
 
         private string[] GetFiles(string path, string pattern)
         {
-#if UNIX
+            if (Platform.IsWindows)
+            {
+                return Directory.GetFiles(path, pattern);
+            }
+
             // On Linux, file names are case sensitive, so we need to add
             // extra logic to select the files that match the given pattern.
             ArrayList result = new ArrayList();
@@ -144,9 +148,6 @@ namespace System.Management.Automation
             }
 
             return (string[])result.ToArray(typeof(string));
-#else
-            return Directory.GetFiles(path, pattern);
-#endif
         }
 
         private void AddFiles(string muiDirectory, string directory, string pattern)

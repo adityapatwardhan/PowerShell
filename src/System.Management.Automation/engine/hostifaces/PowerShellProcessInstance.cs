@@ -32,13 +32,7 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         static PowerShellProcessInstance()
         {
-#if UNIX
-            s_PSExePath = Path.Combine(Utils.DefaultPowerShellAppBase,
-                            "pwsh");
-#else
-            s_PSExePath = Path.Combine(Utils.DefaultPowerShellAppBase,
-                            "pwsh.exe");
-#endif
+            s_PSExePath = Path.Combine(Utils.DefaultPowerShellAppBase, Platform.IsWindows ? "pwsh.exe" : "pwsh");
         }
 
         /// <summary>

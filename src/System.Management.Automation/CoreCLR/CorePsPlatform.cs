@@ -68,26 +68,29 @@ namespace System.Management.Automation
         {
             get
             {
-#if UNIX
-                return false;
-#else
-                if (_isNanoServer.HasValue) { return _isNanoServer.Value; }
-
-                _isNanoServer = false;
-                using (RegistryKey regKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Server\ServerLevels"))
+                if (!Platform.IsWindows)
                 {
-                    if (regKey != null)
+                    return false;
+                }
+                else
+                {
+                    if (_isNanoServer.HasValue) { return _isNanoServer.Value; }
+
+                    _isNanoServer = false;
+                    using (RegistryKey regKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Server\ServerLevels"))
                     {
-                        object value = regKey.GetValue("NanoServer");
-                        if (value != null && regKey.GetValueKind("NanoServer") == RegistryValueKind.DWord)
+                        if (regKey != null)
                         {
-                            _isNanoServer = (int)value == 1;
+                            object value = regKey.GetValue("NanoServer");
+                            if (value != null && regKey.GetValueKind("NanoServer") == RegistryValueKind.DWord)
+                            {
+                                _isNanoServer = (int)value == 1;
+                            }
                         }
                     }
-                }
 
-                return _isNanoServer.Value;
-#endif
+                    return _isNanoServer.Value;
+                }
             }
         }
 
@@ -98,26 +101,29 @@ namespace System.Management.Automation
         {
             get
             {
-#if UNIX
-                return false;
-#else
-                if (_isIoT.HasValue) { return _isIoT.Value; }
-
-                _isIoT = false;
-                using (RegistryKey regKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
+                if (!Platform.IsWindows)
                 {
-                    if (regKey != null)
+                    return false;
+                }
+                else
+                {
+                    if (_isIoT.HasValue) { return _isIoT.Value; }
+
+                    _isIoT = false;
+                    using (RegistryKey regKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
                     {
-                        object value = regKey.GetValue("ProductName");
-                        if (value != null && regKey.GetValueKind("ProductName") == RegistryValueKind.String)
+                        if (regKey != null)
                         {
-                            _isIoT = string.Equals("IoTUAP", (string)value, StringComparison.OrdinalIgnoreCase);
+                            object value = regKey.GetValue("ProductName");
+                            if (value != null && regKey.GetValueKind("ProductName") == RegistryValueKind.String)
+                            {
+                                _isIoT = string.Equals("IoTUAP", (string)value, StringComparison.OrdinalIgnoreCase);
+                            }
                         }
                     }
-                }
 
-                return _isIoT.Value;
-#endif
+                    return _isIoT.Value;
+                }
             }
         }
 
@@ -128,14 +134,17 @@ namespace System.Management.Automation
         {
             get
             {
-#if UNIX
-                return false;
-#else
-                if (_isWindowsDesktop.HasValue) { return _isWindowsDesktop.Value; }
+                if (!Platform.IsWindows)
+                {
+                    return false;
+                }
+                else
+                {
+                    if (_isWindowsDesktop.HasValue) { return _isWindowsDesktop.Value; }
 
-                _isWindowsDesktop = !IsNanoServer && !IsIoT;
-                return _isWindowsDesktop.Value;
-#endif
+                    _isWindowsDesktop = !IsNanoServer && !IsIoT;
+                    return _isWindowsDesktop.Value;
+                }
             }
         }
 
@@ -167,11 +176,9 @@ namespace System.Management.Automation
         /// </summary>
         internal static class CommonEnvVariableNames
         {
-#if UNIX
-            internal const string Home = "HOME";
-#else
-            internal const string Home = "USERPROFILE";
-#endif
+            private static readonly string home = Platform.IsWindows ? "USERPROFILE" : "HOME";
+
+            internal static string Home => home;
         }
 
         /// <summary>
@@ -210,7 +217,6 @@ namespace System.Management.Automation
             return _tempDirectory;
         }
 
-#if UNIX
         /// <summary>
         /// X Desktop Group configuration type enum.
         /// </summary>
@@ -235,6 +241,11 @@ namespace System.Management.Automation
         /// </summary>
         public static string SelectProductNameForDirectory(Platform.XDG_Type dirpath)
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             // TODO: XDG_DATA_DIRS implementation as per GitHub issue #1060
 
             string xdgconfighome = System.Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
@@ -380,7 +391,6 @@ namespace System.Management.Automation
                     return xdgConfigHomeDefault;
             }
         }
-#endif
 
         /// <summary>
         /// The code is copied from the .NET implementation.
@@ -401,56 +411,61 @@ namespace System.Management.Automation
         private static string InternalGetFolderPath(System.Environment.SpecialFolder folder)
         {
             string folderPath = null;
-#if UNIX
-            string envHome = System.Environment.GetEnvironmentVariable(Platform.CommonEnvVariableNames.Home);
-            if (envHome == null)
+
+            if (!Platform.IsWindows)
             {
-                envHome = Platform.GetTemporaryDirectory();
+                string envHome = System.Environment.GetEnvironmentVariable(Platform.CommonEnvVariableNames.Home);
+                if (envHome == null)
+                {
+                    envHome = Platform.GetTemporaryDirectory();
+                }
+
+                switch (folder)
+                {
+                    case System.Environment.SpecialFolder.ProgramFiles:
+                        folderPath = "/bin";
+                        if (!System.IO.Directory.Exists(folderPath)) { folderPath = null; }
+
+                        break;
+                    case System.Environment.SpecialFolder.ProgramFilesX86:
+                        folderPath = "/usr/bin";
+                        if (!System.IO.Directory.Exists(folderPath)) { folderPath = null; }
+
+                        break;
+                    case System.Environment.SpecialFolder.System:
+                    case System.Environment.SpecialFolder.SystemX86:
+                        folderPath = "/sbin";
+                        if (!System.IO.Directory.Exists(folderPath)) { folderPath = null; }
+
+                        break;
+                    case System.Environment.SpecialFolder.Personal:
+                        folderPath = envHome;
+                        break;
+                    case System.Environment.SpecialFolder.LocalApplicationData:
+                        folderPath = System.IO.Path.Combine(envHome, ".config");
+                        if (!System.IO.Directory.Exists(folderPath))
+                        {
+                            try
+                            {
+                                System.IO.Directory.CreateDirectory(folderPath);
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                // directory creation may fail if the account doesn't have filesystem permission such as some service accounts
+                                folderPath = string.Empty;
+                            }
+                        }
+
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+            else
+            {
+                folderPath = System.Environment.GetFolderPath(folder);
             }
 
-            switch (folder)
-            {
-                case System.Environment.SpecialFolder.ProgramFiles:
-                    folderPath = "/bin";
-                    if (!System.IO.Directory.Exists(folderPath)) { folderPath = null; }
-
-                    break;
-                case System.Environment.SpecialFolder.ProgramFilesX86:
-                    folderPath = "/usr/bin";
-                    if (!System.IO.Directory.Exists(folderPath)) { folderPath = null; }
-
-                    break;
-                case System.Environment.SpecialFolder.System:
-                case System.Environment.SpecialFolder.SystemX86:
-                    folderPath = "/sbin";
-                    if (!System.IO.Directory.Exists(folderPath)) { folderPath = null; }
-
-                    break;
-                case System.Environment.SpecialFolder.Personal:
-                    folderPath = envHome;
-                    break;
-                case System.Environment.SpecialFolder.LocalApplicationData:
-                    folderPath = System.IO.Path.Combine(envHome, ".config");
-                    if (!System.IO.Directory.Exists(folderPath))
-                    {
-                        try
-                        {
-                            System.IO.Directory.CreateDirectory(folderPath);
-                        }
-                        catch (UnauthorizedAccessException)
-                        {
-                            // directory creation may fail if the account doesn't have filesystem permission such as some service accounts
-                            folderPath = string.Empty;
-                        }
-                    }
-
-                    break;
-                default:
-                    throw new NotSupportedException();
-            }
-#else
-            folderPath = System.Environment.GetFolderPath(folder);
-#endif
             return folderPath ?? string.Empty;
         }
 

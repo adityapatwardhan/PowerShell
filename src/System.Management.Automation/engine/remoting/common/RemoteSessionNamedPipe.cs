@@ -27,14 +27,11 @@ namespace System.Management.Automation.Remoting
 
 
         internal const string NamedPipeNamePrefix = "PSHost.";
-#if UNIX
-        internal const string DefaultAppDomainName = "None";
-        // This `CoreFxPipe` prefix is defined by CoreFx
-        internal const string NamedPipeNamePrefixSearch = "CoreFxPipe_PSHost*";
-#else
-        internal const string DefaultAppDomainName = "DefaultAppDomain";
-        internal const string NamedPipeNamePrefixSearch = "PSHost*";
-#endif
+
+        internal static readonly string DefaultAppDomainName = Platform.IsWindows ? "DefaultAppDomain" : "None";
+
+        internal static readonly string NamedPipeNamePrefixSearch = Platform.IsWindows ? "PSHost*" : "CoreFxPipe_PSHost*";
+
         // On non-Windows, .NET named pipes are limited to up to 104 characters
         internal const int MaxNamedPipeNameSize = 104;
 
@@ -102,33 +99,35 @@ namespace System.Management.Automation.Remoting
                 appDomainName = DefaultAppDomainName;
             }
 
+            // The starttime is there to prevent another process easily guessing the pipe name
+            // and squatting on it.
+            // There is a limit of 104 characters in total including the temp path to the named pipe file
+            // on non-Windows systems, so we'll convert the starttime to hex and just take the first 8 characters.
+            string startTime = Platform.IsWindows
+                                ? proc.StartTime.ToFileTime().ToString(CultureInfo.InvariantCulture)
+                                : proc.StartTime.ToFileTime().ToString("X8").Substring(1,8);
+
             System.Text.StringBuilder pipeNameBuilder = new System.Text.StringBuilder(MaxNamedPipeNameSize);
             pipeNameBuilder.Append(NamedPipeNamePrefix)
-                // The starttime is there to prevent another process easily guessing the pipe name
-                // and squatting on it.
-                // There is a limit of 104 characters in total including the temp path to the named pipe file
-                // on non-Windows systems, so we'll convert the starttime to hex and just take the first 8 characters.
-#if UNIX
-                .Append(proc.StartTime.ToFileTime().ToString("X8").Substring(1,8))
-#else
-                .Append(proc.StartTime.ToFileTime().ToString(CultureInfo.InvariantCulture))
-#endif
+                .Append(startTime)
                 .Append('.')
                 .Append(proc.Id.ToString(CultureInfo.InvariantCulture))
                 .Append('.')
                 .Append(CleanAppDomainNameForPipeName(appDomainName))
                 .Append('.')
                 .Append(proc.ProcessName);
-#if UNIX
-            int charsToTrim = pipeNameBuilder.Length - MaxNamedPipeNameSize;
-            if (charsToTrim > 0)
+
+            if (!Platform.IsWindows)
             {
-                // TODO: In the case the pipe name is truncated, the user cannot connect to it using the cmdlet
-                // unless we add a `-Force` type switch as it attempts to validate the current process name
-                // matches the process name in the pipe name
-                pipeNameBuilder.Remove(MaxNamedPipeNameSize + 1, charsToTrim);
+                int charsToTrim = pipeNameBuilder.Length - MaxNamedPipeNameSize;
+                if (charsToTrim > 0)
+                {
+                    // TODO: In the case the pipe name is truncated, the user cannot connect to it using the cmdlet
+                    // unless we add a `-Force` type switch as it attempts to validate the current process name
+                    // matches the process name in the pipe name
+                    pipeNameBuilder.Remove(MaxNamedPipeNameSize + 1, charsToTrim);
+                }
             }
-#endif
 
             return pipeNameBuilder.ToString();
         }
@@ -638,9 +637,11 @@ namespace System.Management.Automation.Remoting
 
         internal static CommonSecurityDescriptor GetServerPipeSecurity()
         {
-#if UNIX
-            return null;
-#else
+            if (!Platform.IsWindows)
+            {
+                return null;
+            }
+
             // Built-in Admin SID
             SecurityIdentifier adminSID = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
             DiscretionaryAcl dacl = new DiscretionaryAcl(false, false, 1);
@@ -669,7 +670,6 @@ namespace System.Management.Automation.Remoting
             }
 
             return securityDesc;
-#endif
         }
 
         /// <summary>
@@ -710,11 +710,7 @@ namespace System.Management.Automation.Remoting
 
                 try
                 {
-#if UNIX
-                    userName = System.Environment.UserName;
-#else
-                    userName = WindowsIdentity.GetCurrent().Name;
-#endif
+                    userName = Platform.IsWindows ? WindowsIdentity.GetCurrent().Name : System.Environment.UserName;
                 }
                 catch (System.Security.SecurityException) { }
 

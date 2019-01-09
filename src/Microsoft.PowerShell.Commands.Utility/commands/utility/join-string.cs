@@ -215,11 +215,7 @@ namespace Microsoft.PowerShell.Commands.Utility
         {
             get
             {
-#if UNIX
-                return "`n";
-#else
-                return "`r`n";
-#endif
+                return Platform.IsWindows ? "`r`n" : "`n";
             }
         }
     }

@@ -117,16 +117,17 @@ namespace System.Management.Automation.Internal
             string moduleManifestPath,
             IEnumerable<string> compatiblePSEditions)
         {
-#if UNIX
-            return true;
-#else
+            if (!Platform.IsWindows)
+            {
+                return true;
+            }
+
             if (!ModuleUtils.IsOnSystem32ModulePath(moduleManifestPath))
             {
                 return true;
             }
 
             return Utils.IsPSEditionSupported(compatiblePSEditions);
-#endif
         }
 
         internal static IEnumerable<string> GetDefaultAvailableModuleFiles(bool isForAutoDiscovery, ExecutionContext context)
@@ -371,14 +372,15 @@ namespace System.Management.Automation.Internal
 
         internal static bool IsOnSystem32ModulePath(string path)
         {
-#if UNIX
-            return false;
-#else
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             Dbg.Assert(!string.IsNullOrEmpty(path), $"Caller to verify that {nameof(path)} is not null or empty");
 
             string windowsPowerShellPSHomePath = ModuleIntrinsics.GetWindowsPowerShellPSHomeModulePath();
             return path.StartsWith(windowsPowerShellPSHomePath, StringComparison.OrdinalIgnoreCase);
-#endif
         }
 
         /// <summary>

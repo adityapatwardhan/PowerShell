@@ -2969,7 +2969,7 @@ namespace System.Management.Automation.Remoting.Client
             IntPtr requestDetails,
             int flags,
             IntPtr context);
-#if UNIX
+
         /// <summary>
         /// Registers the shutdown callback.
         /// </summary>
@@ -2982,7 +2982,6 @@ namespace System.Management.Automation.Remoting.Client
             IntPtr requestDetails,
             IntPtr shutdownCallback,
             IntPtr shutdownContext);
-#endif
         #endregion
     }
 
@@ -3071,9 +3070,10 @@ namespace System.Management.Automation.Remoting.Client
             IntPtr shutdownCallback,
             IntPtr shutdownContext)
         {
-#if UNIX
-            WSManNativeApi.WSManPluginRegisterShutdownCallback(requestDetails, shutdownCallback, shutdownContext);
-#endif
+            if (!Platform.IsWindows)
+            {
+                WSManNativeApi.WSManPluginRegisterShutdownCallback(requestDetails, shutdownCallback, shutdownContext);
+            }
         }
     }
 }

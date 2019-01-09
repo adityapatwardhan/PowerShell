@@ -1445,12 +1445,10 @@ namespace System.Management.Automation
         /// </returns>
         internal static bool IsSingleFileSystemAbsolutePath(string path)
         {
-#if UNIX
-            return path.StartsWith(StringLiterals.DefaultPathSeparator)
-                || path.StartsWith(StringLiterals.AlternatePathSeparator);
-#else
-            return false;
-#endif
+            return Platform.IsWindows
+                ? path.StartsWith(StringLiterals.DefaultPathSeparator)
+                    || path.StartsWith(StringLiterals.AlternatePathSeparator)
+                : false;
         }
 
         /// <summary>

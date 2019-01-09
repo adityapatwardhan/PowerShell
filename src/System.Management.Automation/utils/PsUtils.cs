@@ -232,11 +232,7 @@ namespace System.Management.Automation
 
         internal static uint GetNativeThreadId()
         {
-#if UNIX
-            return Platform.NonWindowsGetThreadId();
-#else
-            return NativeMethods.GetCurrentThreadId();
-#endif
+            return Platform.IsWindows ? NativeMethods.GetCurrentThreadId() : Platform.NonWindowsGetThreadId();
         }
 
         private static class NativeMethods

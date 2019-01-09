@@ -782,32 +782,35 @@ namespace Microsoft.PowerShell
                 }
                 else if (MatchSwitch(switchKey, "windowstyle", "w"))
                 {
-#if UNIX
-                    WriteCommandLineError(
-                        CommandLineParameterParserStrings.WindowStyleArgumentNotImplemented);
-                    break;
-#else
-                    ++i;
-                    if (i >= args.Length)
+                    if (!Platform.IsWindows)
                     {
                         WriteCommandLineError(
-                            CommandLineParameterParserStrings.MissingWindowStyleArgument);
+                            CommandLineParameterParserStrings.WindowStyleArgumentNotImplemented);
                         break;
                     }
+                    else
+                    {
+                        ++i;
+                        if (i >= args.Length)
+                        {
+                            WriteCommandLineError(
+                                CommandLineParameterParserStrings.MissingWindowStyleArgument);
+                            break;
+                        }
 
-                    try
-                    {
-                        ProcessWindowStyle style = (ProcessWindowStyle)LanguagePrimitives.ConvertTo(
-                            args[i], typeof(ProcessWindowStyle), CultureInfo.InvariantCulture);
-                        ConsoleControl.SetConsoleMode(style);
+                        try
+                        {
+                            ProcessWindowStyle style = (ProcessWindowStyle)LanguagePrimitives.ConvertTo(
+                                args[i], typeof(ProcessWindowStyle), CultureInfo.InvariantCulture);
+                            ConsoleControl.SetConsoleMode(style);
+                        }
+                        catch (PSInvalidCastException e)
+                        {
+                            WriteCommandLineError(
+                                string.Format(CultureInfo.CurrentCulture, CommandLineParameterParserStrings.InvalidWindowStyleArgument, args[i], e.Message));
+                            break;
+                        }
                     }
-                    catch (PSInvalidCastException e)
-                    {
-                        WriteCommandLineError(
-                            string.Format(CultureInfo.CurrentCulture, CommandLineParameterParserStrings.InvalidWindowStyleArgument, args[i], e.Message));
-                        break;
-                    }
-#endif
                 }
                 else if (MatchSwitch(switchKey, "file", "f"))
                 {

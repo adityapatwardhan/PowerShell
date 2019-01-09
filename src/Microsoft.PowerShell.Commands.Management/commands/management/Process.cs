@@ -734,97 +734,101 @@ namespace Microsoft.PowerShell.Commands
         private static string RetrieveProcessUserName(Process process)
         {
             string userName = null;
-#if UNIX
-            userName = Platform.NonWindowsGetUserFromPid(process.Id);
-#else
-            IntPtr tokenUserInfo = IntPtr.Zero;
-            IntPtr processTokenHandler = IntPtr.Zero;
 
-            const uint TOKEN_QUERY = 0x0008;
-
-            try
+            if (!Platform.IsWindows)
             {
-                do
+                userName = Platform.NonWindowsGetUserFromPid(process.Id);
+            }
+            else
+            {
+                IntPtr tokenUserInfo = IntPtr.Zero;
+                IntPtr processTokenHandler = IntPtr.Zero;
+
+                const uint TOKEN_QUERY = 0x0008;
+
+                try
                 {
-                    int error;
-                    if (!Win32Native.OpenProcessToken(process.Handle, TOKEN_QUERY, out processTokenHandler)) { break; }
-
-                    // Set the default length to be 256, so it will be sufficient for most cases.
-                    int tokenInfoLength = 256;
-                    tokenUserInfo = Marshal.AllocHGlobal(tokenInfoLength);
-                    if (!Win32Native.GetTokenInformation(processTokenHandler, Win32Native.TOKEN_INFORMATION_CLASS.TokenUser, tokenUserInfo, tokenInfoLength, out tokenInfoLength))
+                    do
                     {
-                        error = Marshal.GetLastWin32Error();
-                        if (error == Win32Native.ERROR_INSUFFICIENT_BUFFER)
-                        {
-                            Marshal.FreeHGlobal(tokenUserInfo);
-                            tokenUserInfo = Marshal.AllocHGlobal(tokenInfoLength);
+                        int error;
+                        if (!Win32Native.OpenProcessToken(process.Handle, TOKEN_QUERY, out processTokenHandler)) { break; }
 
-                            if (!Win32Native.GetTokenInformation(processTokenHandler, Win32Native.TOKEN_INFORMATION_CLASS.TokenUser, tokenUserInfo, tokenInfoLength, out tokenInfoLength)) { break; }
-                        }
-                        else
+                        // Set the default length to be 256, so it will be sufficient for most cases.
+                        int tokenInfoLength = 256;
+                        tokenUserInfo = Marshal.AllocHGlobal(tokenInfoLength);
+                        if (!Win32Native.GetTokenInformation(processTokenHandler, Win32Native.TOKEN_INFORMATION_CLASS.TokenUser, tokenUserInfo, tokenInfoLength, out tokenInfoLength))
                         {
-                            break;
+                            error = Marshal.GetLastWin32Error();
+                            if (error == Win32Native.ERROR_INSUFFICIENT_BUFFER)
+                            {
+                                Marshal.FreeHGlobal(tokenUserInfo);
+                                tokenUserInfo = Marshal.AllocHGlobal(tokenInfoLength);
+
+                                if (!Win32Native.GetTokenInformation(processTokenHandler, Win32Native.TOKEN_INFORMATION_CLASS.TokenUser, tokenUserInfo, tokenInfoLength, out tokenInfoLength)) { break; }
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
+
+                        var tokenUser = Marshal.PtrToStructure<Win32Native.TOKEN_USER>(tokenUserInfo);
+
+                        // Set the default length to be 256, so it will be sufficient for most cases.
+                        int userNameLength = 256, domainNameLength = 256;
+                        var userNameStr = new StringBuilder(userNameLength);
+                        var domainNameStr = new StringBuilder(domainNameLength);
+                        Win32Native.SID_NAME_USE accountType;
+
+                        if (!Win32Native.LookupAccountSid(null, tokenUser.User.Sid, userNameStr, ref userNameLength, domainNameStr, ref domainNameLength, out accountType))
+                        {
+                            error = Marshal.GetLastWin32Error();
+                            if (error == Win32Native.ERROR_INSUFFICIENT_BUFFER)
+                            {
+                                userNameStr.EnsureCapacity(userNameLength);
+                                domainNameStr.EnsureCapacity(domainNameLength);
+
+                                if (!Win32Native.LookupAccountSid(null, tokenUser.User.Sid, userNameStr, ref userNameLength, domainNameStr, ref domainNameLength, out accountType)) { break; }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        userName = domainNameStr + "\\" + userNameStr;
+                    } while (false);
+                }
+                catch (NotSupportedException)
+                {
+                    // The Process not started yet, or it's a process from a remote machine.
+                }
+                catch (InvalidOperationException)
+                {
+                    // The Process has exited, Process.Handle will raise this exception.
+                }
+                catch (Win32Exception)
+                {
+                    // We might get an AccessDenied error.
+                }
+                catch (Exception)
+                {
+                    // I don't expect to get other exceptions.
+                }
+                finally
+                {
+                    if (tokenUserInfo != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(tokenUserInfo);
                     }
 
-                    var tokenUser = Marshal.PtrToStructure<Win32Native.TOKEN_USER>(tokenUserInfo);
-
-                    // Set the default length to be 256, so it will be sufficient for most cases.
-                    int userNameLength = 256, domainNameLength = 256;
-                    var userNameStr = new StringBuilder(userNameLength);
-                    var domainNameStr = new StringBuilder(domainNameLength);
-                    Win32Native.SID_NAME_USE accountType;
-
-                    if (!Win32Native.LookupAccountSid(null, tokenUser.User.Sid, userNameStr, ref userNameLength, domainNameStr, ref domainNameLength, out accountType))
+                    if (processTokenHandler != IntPtr.Zero)
                     {
-                        error = Marshal.GetLastWin32Error();
-                        if (error == Win32Native.ERROR_INSUFFICIENT_BUFFER)
-                        {
-                            userNameStr.EnsureCapacity(userNameLength);
-                            domainNameStr.EnsureCapacity(domainNameLength);
-
-                            if (!Win32Native.LookupAccountSid(null, tokenUser.User.Sid, userNameStr, ref userNameLength, domainNameStr, ref domainNameLength, out accountType)) { break; }
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        Win32Native.CloseHandle(processTokenHandler);
                     }
-
-                    userName = domainNameStr + "\\" + userNameStr;
-                } while (false);
-            }
-            catch (NotSupportedException)
-            {
-                // The Process not started yet, or it's a process from a remote machine.
-            }
-            catch (InvalidOperationException)
-            {
-                // The Process has exited, Process.Handle will raise this exception.
-            }
-            catch (Win32Exception)
-            {
-                // We might get an AccessDenied error.
-            }
-            catch (Exception)
-            {
-                // I don't expect to get other exceptions.
-            }
-            finally
-            {
-                if (tokenUserInfo != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(tokenUserInfo);
-                }
-
-                if (processTokenHandler != IntPtr.Zero)
-                {
-                    Win32Native.CloseHandle(processTokenHandler);
                 }
             }
 
-#endif
             return userName;
         }
 
@@ -1861,14 +1865,16 @@ namespace Microsoft.PowerShell.Commands
             catch (CommandNotFoundException)
             {
                 startInfo.FileName = FilePath;
-#if UNIX
-                // Arguments are passed incorrectly to the executable used for ShellExecute and not to filename https://github.com/dotnet/corefx/issues/30718
-                // so don't use ShellExecute if arguments are specified
 
-                // Linux relies on `xdg-open` and macOS relies on `open` which behave differently than Windows ShellExecute when running console commands
-                // as a new console will be opened.  So to avoid that, we only use ShellExecute on non-Windows if the filename is not an actual command (like a URI)
-                startInfo.UseShellExecute = (ArgumentList == null);
-#endif
+                if (!Platform.IsWindows)
+                {
+                    // Arguments are passed incorrectly to the executable used for ShellExecute and not to filename https://github.com/dotnet/corefx/issues/30718
+                    // so don't use ShellExecute if arguments are specified
+
+                    // Linux relies on `xdg-open` and macOS relies on `open` which behave differently than Windows ShellExecute when running console commands
+                    // as a new console will be opened.  So to avoid that, we only use ShellExecute on non-Windows if the filename is not an actual command (like a URI)
+                    startInfo.UseShellExecute = (ArgumentList == null);
+                }
             }
 
             if (ArgumentList != null)
@@ -2029,9 +2035,11 @@ namespace Microsoft.PowerShell.Commands
                 {
                     if (!process.HasExited)
                     {
-#if UNIX
-                        process.WaitForExit();
-#else
+                        if (!Platform.IsWindows)
+                        {
+                            process.WaitForExit();
+                        }
+
                         _waithandle = new ManualResetEvent(false);
 
                         // Create and start the job object
@@ -2143,38 +2151,45 @@ namespace Microsoft.PowerShell.Commands
             }
             else
             {
-#if UNIX
-                process = new Process() { StartInfo = startInfo };
-                SetupInputOutputRedirection(process);
-                process.Start();
-                if (process.StartInfo.RedirectStandardOutput)
+                if (!Platform.IsWindows)
                 {
-                    process.BeginOutputReadLine();
-                }
+                    process = new Process() { StartInfo = startInfo };
+                    SetupInputOutputRedirection(process);
+                    process.Start();
+                    if (process.StartInfo.RedirectStandardOutput)
+                    {
+                        process.BeginOutputReadLine();
+                    }
 
-                if (process.StartInfo.RedirectStandardError)
-                {
-                    process.BeginErrorReadLine();
-                }
+                    if (process.StartInfo.RedirectStandardError)
+                    {
+                        process.BeginErrorReadLine();
+                    }
 
-                if (process.StartInfo.RedirectStandardInput)
-                {
-                    WriteToStandardInput(process);
+                    if (process.StartInfo.RedirectStandardInput)
+                    {
+                        WriteToStandardInput(process);
+                    }
                 }
-#else
-                process = StartWithCreateProcess(startInfo);
-#endif
+                else
+                {
+                    process = StartWithCreateProcess(startInfo);
+                }
             }
 
             return process;
         }
 
-#if UNIX
         private StreamWriter _outputWriter;
         private StreamWriter _errorWriter;
 
         private void StdOutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             if (!string.IsNullOrEmpty(outLine.Data))
             {
                 _outputWriter.WriteLine(outLine.Data);
@@ -2184,6 +2199,11 @@ namespace Microsoft.PowerShell.Commands
 
         private void StdErrorHandler(object sendingProcess, DataReceivedEventArgs outLine)
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             if (!string.IsNullOrEmpty(outLine.Data))
             {
                 _errorWriter.WriteLine(outLine.Data);
@@ -2193,6 +2213,11 @@ namespace Microsoft.PowerShell.Commands
 
         private void ExitHandler(object sendingProcess, System.EventArgs e)
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             // To avoid a race condition with Std*Handler, let's wait a bit before closing the streams
             // System.Timer is not supported in CoreCLR, so let's spawn a new thread to do the wait
 
@@ -2202,6 +2227,11 @@ namespace Microsoft.PowerShell.Commands
 
         private void StreamClosing()
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             Thread.Sleep(1000);
 
             if (_outputWriter != null)
@@ -2217,6 +2247,11 @@ namespace Microsoft.PowerShell.Commands
 
         private void SetupInputOutputRedirection(Process p)
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             if (_redirectstandardinput != null)
             {
                 p.StartInfo.RedirectStandardInput = true;
@@ -2263,6 +2298,11 @@ namespace Microsoft.PowerShell.Commands
 
         private void WriteToStandardInput(Process p)
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             StreamWriter writer = p.StandardInput;
             using (StreamReader reader = new StreamReader(new FileStream(_redirectstandardinput, FileMode.Open)))
             {
@@ -2272,7 +2312,7 @@ namespace Microsoft.PowerShell.Commands
 
             writer.Dispose();
         }
-#else
+
         private SafeFileHandle GetSafeFileHandleForRedirection(string RedirectionPath, uint dwCreationDisposition)
         {
             System.IntPtr hFileHandle = System.IntPtr.Zero;
@@ -2540,7 +2580,7 @@ namespace Microsoft.PowerShell.Commands
                 lpProcessInformation.Dispose();
             }
         }
-#endif
+
 
         /// <summary>
         /// This method will be used only on Windows full desktop.

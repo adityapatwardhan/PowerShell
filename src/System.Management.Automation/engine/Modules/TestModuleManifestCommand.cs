@@ -360,9 +360,11 @@ namespace Microsoft.PowerShell.Commands
         /// <returns></returns>
         private bool IsValidGacAssembly(string assemblyName)
         {
-#if UNIX
-            return false;
-#else
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             string gacPath = System.Environment.GetEnvironmentVariable("windir") + "\\Microsoft.NET\\assembly";
             string assemblyFile = assemblyName;
             string ngenAssemblyFile = assemblyName;

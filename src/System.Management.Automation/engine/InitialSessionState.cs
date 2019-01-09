@@ -2720,14 +2720,18 @@ namespace System.Management.Automation.Runspaces
                 // Or for virtual accounts
                 // WinDir\System32\Microsoft\PowerShell\DriveRoots\[UserName]
                 string directoryName = MakeUserNamePath();
-#if UNIX
-                string userDrivePath = Path.Combine(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE), "DriveRoots", directoryName);
-#else
-                string userDrivePath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    @"Microsoft\PowerShell\DriveRoots",
-                    directoryName);
-#endif
+
+                if (!Platform.IsWindows)
+                {
+                    string userDrivePath = Path.Combine(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE), "DriveRoots", directoryName);
+                }
+                else
+                {
+                    string userDrivePath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        @"Microsoft\PowerShell\DriveRoots",
+                        directoryName);
+                }
 
                 // Create directory if it doesn't exist.
                 if (!System.IO.Directory.Exists(userDrivePath))
@@ -2766,11 +2770,7 @@ namespace System.Management.Automation.Runspaces
             var userName = !string.IsNullOrEmpty(this.UserDriveUserName)
                 ? this.UserDriveUserName
                 // domain\user on Windows, just user on Unix
-#if UNIX
-                : Platform.Unix.UserName;
-#else
-                : System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-#endif
+                : Platform.IsWindows ? System.Security.Principal.WindowsIdentity.GetCurrent().Name : Platform.Unix.UserName;
 
             // Ensure that user name contains no invalid path characters.
             // MSDN indicates that logon names cannot contain any of these invalid characters,

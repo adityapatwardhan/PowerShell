@@ -240,12 +240,15 @@ namespace System.Management.Automation
         /// <returns>The current user's configuration settings directory.</returns>
         internal static string GetUserConfigurationDirectory()
         {
-#if UNIX
-            return Platform.SelectProductNameForDirectory(Platform.XDG_Type.CONFIG);
-#else
-            string basePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-            return IO.Path.Combine(basePath, Utils.ProductNameForDirectory);
-#endif
+            if (!Platform.IsWindows)
+            {
+                return Platform.SelectProductNameForDirectory(Platform.XDG_Type.CONFIG);
+            }
+            else
+            {
+                string basePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                return IO.Path.Combine(basePath, Utils.ProductNameForDirectory);
+            }
         }
 
         private static string[] GetProductFolderDirectories()
@@ -919,9 +922,11 @@ namespace System.Management.Automation
             // permissions. To fit into PowerShell's existing model of preemptively checking
             // permissions (which cannot be assumed on Unix), we "assume" the user is an
             // administrator by returning true, thus nullifying this check on Unix.
-#if UNIX
-            return true;
-#else
+            if (!Platform.IsWindows)
+            {
+                return true;
+            }
+
             WindowsIdentity currentIdentity;
             if (TryGetWindowsCurrentIdentity(out currentIdentity))
             {
@@ -930,7 +935,6 @@ namespace System.Management.Automation
             }
 
             return false;
-#endif
         }
 
         internal static bool IsReservedDeviceName(string destinationPath)
@@ -965,12 +969,13 @@ namespace System.Management.Automation
 
         internal static bool PathIsUnc(string path)
         {
-#if UNIX
-            return false;
-#else
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             Uri uri;
             return !string.IsNullOrEmpty(path) && Uri.TryCreate(path, UriKind.Absolute, out uri) && uri.IsUnc;
-#endif
         }
 
         internal class NativeMethods
@@ -1341,11 +1346,12 @@ namespace System.Management.Automation
         /// </summary>
         internal static bool IsComObject(object obj)
         {
-#if UNIX
-            return false;
-#else
+            if (!Platform.IsWindows)
+            {
+                return false;
+            }
+
             return obj != null && Marshal.IsComObject(obj);
-#endif
         }
 
         /// <summary>

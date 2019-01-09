@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-#if UNIX
 
 using System.Diagnostics.Eventing;
 using System.Management.Automation.Configuration;
@@ -28,6 +27,11 @@ namespace System.Management.Automation.Tracing
         /// </summary>
         static PSSysLogProvider()
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             s_provider = new SysLogProvider(PowerShellConfig.Instance.GetSysLogIdentity(),
                                             PowerShellConfig.Instance.GetLogLevel(),
                                             PowerShellConfig.Instance.GetLogKeywords(),
@@ -331,5 +335,3 @@ namespace System.Management.Automation.Tracing
         }
     }
 }
-
-#endif // UNIX

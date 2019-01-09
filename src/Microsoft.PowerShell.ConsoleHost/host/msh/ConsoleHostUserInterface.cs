@@ -55,28 +55,31 @@ namespace Microsoft.PowerShell
             _parent = parent;
             _rawui = new ConsoleHostRawUserInterface(this);
 
-#if UNIX
-            SupportsVirtualTerminal = true;
-#else
-            try
+            if (!Platform.IsWindows)
             {
-                // Turn on virtual terminal if possible.
-
-                // This might throw - not sure how exactly (no console), but if it does, we shouldn't fail to start.
-                var handle = ConsoleControl.GetActiveScreenBufferHandle();
-                var m = ConsoleControl.GetMode(handle);
-                if (ConsoleControl.NativeMethods.SetConsoleMode(handle.DangerousGetHandle(), (uint)(m | ConsoleControl.ConsoleModes.VirtualTerminal)))
+                SupportsVirtualTerminal = true;
+            }
+            else
+            {
+                try
                 {
-                    // We only know if vt100 is supported if the previous call actually set the new flag, older
-                    // systems ignore the setting.
-                    m = ConsoleControl.GetMode(handle);
-                    this.SupportsVirtualTerminal = (m & ConsoleControl.ConsoleModes.VirtualTerminal) != 0;
+                    // Turn on virtual terminal if possible.
+
+                    // This might throw - not sure how exactly (no console), but if it does, we shouldn't fail to start.
+                    var handle = ConsoleControl.GetActiveScreenBufferHandle();
+                    var m = ConsoleControl.GetMode(handle);
+                    if (ConsoleControl.NativeMethods.SetConsoleMode(handle.DangerousGetHandle(), (uint)(m | ConsoleControl.ConsoleModes.VirtualTerminal)))
+                    {
+                        // We only know if vt100 is supported if the previous call actually set the new flag, older
+                        // systems ignore the setting.
+                        m = ConsoleControl.GetMode(handle);
+                        this.SupportsVirtualTerminal = (m & ConsoleControl.ConsoleModes.VirtualTerminal) != 0;
+                    }
+                }
+                catch
+                {
                 }
             }
-            catch
-            {
-            }
-#endif
 
             _isInteractiveTestToolListening = false;
         }
@@ -251,92 +254,106 @@ namespace Microsoft.PowerShell
                 null;
             SecureString secureResult = new SecureString();
             StringBuilder result = new StringBuilder();
-#if UNIX
-            bool treatControlCAsInput = Console.TreatControlCAsInput;
-#else
-            ConsoleHandle handle = ConsoleControl.GetConioDeviceHandle();
-            ConsoleControl.ConsoleModes originalMode = ConsoleControl.GetMode(handle);
-            bool isModeChanged = true; // assume ConsoleMode is changed so that if ReadLineSetMode
-            // fails to return the value correctly, the original mode is
-            // restored.
-#endif
+
+            bool treatControlCAsInput = false;
+            bool isModeChanged = false;
+            ConsoleHandle handle = null;
+            ConsoleControl.ConsoleModes originalMode = ConsoleControl.ConsoleModes.Unknown;
+
+            if (!Platform.IsWindows)
+            {
+                treatControlCAsInput = Console.TreatControlCAsInput;
+            }
+            else
+            {
+                handle = ConsoleControl.GetConioDeviceHandle();
+                originalMode = ConsoleControl.GetMode(handle);
+                isModeChanged = true; // assume ConsoleMode is changed so that if ReadLineSetMode
+                // fails to return the value correctly, the original mode is
+                // restored.
+            }
 
             try
             {
-#if UNIX
-                Console.TreatControlCAsInput = true;
-#else
-                // Ensure that we're in the proper line-input mode.
-
-                ConsoleControl.ConsoleModes desiredMode =
-                    ConsoleControl.ConsoleModes.Extended |
-                    ConsoleControl.ConsoleModes.QuickEdit;
-
-                ConsoleControl.ConsoleModes m = originalMode;
-                bool shouldUnsetEchoInput = shouldUnsetMode(ConsoleControl.ConsoleModes.EchoInput, ref m);
-                bool shouldUnsetLineInput = shouldUnsetMode(ConsoleControl.ConsoleModes.LineInput, ref m);
-                bool shouldUnsetMouseInput = shouldUnsetMode(ConsoleControl.ConsoleModes.MouseInput, ref m);
-                bool shouldUnsetProcessInput = shouldUnsetMode(ConsoleControl.ConsoleModes.ProcessedInput, ref m);
-
-                if ((m & desiredMode) != desiredMode ||
-                    shouldUnsetMouseInput ||
-                    shouldUnsetEchoInput ||
-                    shouldUnsetLineInput ||
-                    shouldUnsetProcessInput)
+                if (!Platform.IsWindows)
                 {
-                    m |= desiredMode;
-                    ConsoleControl.SetMode(handle, m);
+                    Console.TreatControlCAsInput = true;
                 }
                 else
                 {
-                    isModeChanged = false;
-                }
+                    // Ensure that we're in the proper line-input mode.
 
-                _rawui.ClearKeyCache();
-#endif
+                    ConsoleControl.ConsoleModes desiredMode =
+                        ConsoleControl.ConsoleModes.Extended |
+                        ConsoleControl.ConsoleModes.QuickEdit;
+
+                    ConsoleControl.ConsoleModes m = originalMode;
+                    bool shouldUnsetEchoInput = shouldUnsetMode(ConsoleControl.ConsoleModes.EchoInput, ref m);
+                    bool shouldUnsetLineInput = shouldUnsetMode(ConsoleControl.ConsoleModes.LineInput, ref m);
+                    bool shouldUnsetMouseInput = shouldUnsetMode(ConsoleControl.ConsoleModes.MouseInput, ref m);
+                    bool shouldUnsetProcessInput = shouldUnsetMode(ConsoleControl.ConsoleModes.ProcessedInput, ref m);
+
+                    if ((m & desiredMode) != desiredMode ||
+                        shouldUnsetMouseInput ||
+                        shouldUnsetEchoInput ||
+                        shouldUnsetLineInput ||
+                        shouldUnsetProcessInput)
+                    {
+                        m |= desiredMode;
+                        ConsoleControl.SetMode(handle, m);
+                    }
+                    else
+                    {
+                        isModeChanged = false;
+                    }
+
+                    _rawui.ClearKeyCache();
+                }
 
                 Coordinates originalCursorPos = _rawui.CursorPosition;
 
                 do
                 {
+                    string key = null;
+                    ConsoleKeyInfo keyInfo = new ConsoleKeyInfo();
+
                     //
                     // read one char at a time so that we don't
                     // end up having a immutable string holding the
                     // secret in memory.
                     //
-#if UNIX
-                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-#else
-                    uint unused = 0;
-                    string key = ConsoleControl.ReadConsole(handle, string.Empty, 1, false, out unused);
-#endif
+                    if (!Platform.IsWindows)
+                    {
+                        keyInfo = Console.ReadKey(true);
+                    }
+                    else
+                    {
+                        uint unused = 0;
+                        key = ConsoleControl.ReadConsole(handle, string.Empty, 1, false, out unused);
+                    }
 
-#if UNIX
-                    // Handle Ctrl-C ending input
-                    if (keyInfo.Key == ConsoleKey.C && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
-#else
-                    if (string.IsNullOrEmpty(key) || (char)3 == key[0])
-#endif
+                    bool isCtrlC = Platform.IsWindows
+                                    ? string.IsNullOrEmpty(key) || (char)3 == key[0]
+                                    : (keyInfo.Key == ConsoleKey.C && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control));
+                    if (isCtrlC)
                     {
                         PipelineStoppedException e = new PipelineStoppedException();
                         throw e;
                     }
-#if UNIX
-                    if (keyInfo.Key == ConsoleKey.Enter)
-#else
-                    if ((char)13 == key[0])
-#endif
+
+                    bool isEnter = Platform.IsWindows ? (char)13 == key[0] : keyInfo.Key == ConsoleKey.Enter;
+
+                    if (isEnter)
                     {
                         //
                         // we are done if user presses ENTER key
                         //
                         break;
                     }
-#if UNIX
-                    if (keyInfo.Key == ConsoleKey.Backspace)
-#else
-                    if ((char)8 == key[0])
-#endif
+
+                    bool isBackSpace = Platform.IsWindows ? (char)8 == key[0] : keyInfo.Key == ConsoleKey.Backspace;
+
+                    if (isBackSpace)
                     {
                         //
                         // for backspace, remove last char appended
@@ -352,13 +369,11 @@ namespace Microsoft.PowerShell
                             WriteBackSpace(originalCursorPos);
                         }
                     }
-#if UNIX
-                    else if (char.IsControl(keyInfo.KeyChar))
+                    else if (!Platform.IsWindows && char.IsControl(keyInfo.KeyChar))
                     {
                         // blacklist control characters
                         continue;
                     }
-#endif
                     else
                     {
                         //
@@ -366,19 +381,18 @@ namespace Microsoft.PowerShell
                         //
                         if (isSecureString)
                         {
-#if UNIX
-                            secureResult.AppendChar(keyInfo.KeyChar);
-#else
-                            secureResult.AppendChar(key[0]);
-#endif
+                            secureResult.AppendChar(Platform.IsWindows ? key[0] : keyInfo.KeyChar);
                         }
                         else
                         {
-#if UNIX
-                            result.Append(keyInfo.KeyChar);
-#else
-                            result.Append(key);
-#endif
+                            if (!Platform.IsWindows)
+                            {
+                                result.Append(keyInfo.KeyChar);
+                            }
+                            else
+                            {
+                                result.Append(key);
+                            }
                         }
 
                         if (!string.IsNullOrEmpty(printTokenString))
@@ -389,23 +403,31 @@ namespace Microsoft.PowerShell
                 }
                 while (true);
             }
-#if UNIX
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ioe)
             {
-                // ReadKey() failed so we stop
-                throw new PipelineStoppedException();
+                if (!Platform.IsWindows)
+                {
+                    // ReadKey() failed so we stop
+                    throw new PipelineStoppedException();
+                }
+                else
+                {
+                    throw ioe;
+                }
             }
-#endif
             finally
             {
-#if UNIX
-                Console.TreatControlCAsInput = treatControlCAsInput;
-#else
-                if (isModeChanged)
+                if (!Platform.IsWindows)
                 {
-                    ConsoleControl.SetMode(handle, originalMode);
+                    Console.TreatControlCAsInput = treatControlCAsInput;
                 }
-#endif
+                else
+                {
+                    if (isModeChanged)
+                    {
+                        ConsoleControl.SetMode(handle, originalMode);
+                    }
+                }
             }
 
             WriteLineToConsole();
@@ -1446,44 +1468,46 @@ namespace Microsoft.PowerShell
             // If input is terminated with a break key (Ctrl-C, Ctrl-Break, Close, etc.), then the buffer will be
             // the empty string.
 
-#if UNIX
             // For Unix systems, we implement a basic readline loop around Console.ReadKey(), that
             // supports backspace, arrow keys, Ctrl-C, and Ctrl-D. This readline is only used for
             // interactive prompts (like Read-Host), otherwise it is assumed that PSReadLine is
             // available. Therefore this explicitly does not support history or tab completion.
 
             bool treatControlCAsInput = Console.TreatControlCAsInput;
+            ConsoleKeyInfo keyInfo = new ConsoleKeyInfo();
+            string s = string.Empty;
+            int index = 0;
+            int cursorLeft = Console.CursorLeft;
+            int cursorCurrent = cursorLeft;
+            bool insertMode = true;
+            uint keyState = 0;
 
             try
             {
+                if (!Platform.IsWindows)
+                {
+                    Console.TreatControlCAsInput = true;
+                }
+                else
+                {
+                    _rawui.ClearKeyCache();
+                }
 
-                ConsoleKeyInfo keyInfo;
-                string s = string.Empty;
-                int index = 0;
-                int cursorLeft = Console.CursorLeft;
-                int cursorCurrent = cursorLeft;
-                bool insertMode = true;
-                Console.TreatControlCAsInput = true;
-#else
-            _rawui.ClearKeyCache();
-            uint keyState = 0;
-            string s = string.Empty;
-#endif
                 do
                 {
-#if UNIX
-                    keyInfo = Console.ReadKey(true);
-#else
-                s += ConsoleControl.ReadConsole(handle, initialContent, maxInputLineLength, endOnTab, out keyState);
-                Dbg.Assert(s != null, "s should never be null");
-#endif
+                    if (!Platform.IsWindows)
+                    {
+                        keyInfo = Console.ReadKey(true);
+                    }
+                    else
+                    {
+                        s += ConsoleControl.ReadConsole(handle, initialContent, maxInputLineLength, endOnTab, out keyState);
+                        Dbg.Assert(s != null, "s should never be null");
+                    }
 
-#if UNIX
-                    // Handle Ctrl-C ending input
-                    if (keyInfo.Key == ConsoleKey.C && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
-#else
-                if (s.Length == 0)
-#endif
+                    bool isCtrlC = Platform.IsWindows ? s.Length == 0 : keyInfo.Key == ConsoleKey.C && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control);
+
+                    if (isCtrlC)
                     {
                         result = ReadLineResult.endedOnBreak;
                         s = null;
@@ -1498,203 +1522,210 @@ namespace Microsoft.PowerShell
                         break;
                     }
 
-#if UNIX
-                    if (keyInfo.Key == ConsoleKey.Enter)
-#else
-                if (s.EndsWith(Crlf, StringComparison.Ordinal))
-#endif
+                    bool isEnter = Platform.IsWindows ? s.EndsWith(Crlf, StringComparison.Ordinal) : keyInfo.Key == ConsoleKey.Enter;
+
+                    if (isEnter)
                     {
                         result = ReadLineResult.endedOnEnter;
-#if UNIX
-                        // We're intercepting characters, so we need to echo the newline
-                        Console.Out.WriteLine();
-#else
-                    s = s.Remove(s.Length - Crlf.Length);
-#endif
+
+                        if (!Platform.IsWindows)
+                        {
+                            // We're intercepting characters, so we need to echo the newline
+                            Console.Out.WriteLine();
+                        }
+                        else
+                        {
+                            s = s.Remove(s.Length - Crlf.Length);
+                        }
+
                         break;
                     }
 
-#if UNIX
-                    if (keyInfo.Key == ConsoleKey.Tab)
+                    if (!Platform.IsWindows)
                     {
-                        // This is unsupported
-                        continue;
-                    }
-#else
-                int i = s.IndexOf(Tab, StringComparison.Ordinal);
-
-                if (endOnTab && i != -1)
-                {
-                    // then the tab we found is the completion character.  bit 0x10 is set if the shift key was down
-                    // when the key was hit.
-
-                    if ((keyState & 0x10) == 0)
-                    {
-                        result = ReadLineResult.endedOnTab;
-                    }
-                    else if ((keyState & 0x10) > 0)
-                    {
-                        result = ReadLineResult.endedOnShiftTab;
-                    }
-                    else
-                    {
-                        // do nothing: leave the result state as it was. This is the circumstance when we've have to
-                        // do more than one iteration and the input ended on a tab or shift-tab, or the user hit
-                        // enter, or the user hit ctrl-c
-                    }
-
-                    // also clean up the screen -- if the cursor was positioned somewhere before the last character
-                    // in the input buffer, then the characters from the tab to the end of the buffer need to be
-                    // erased.
-                    int leftover = RawUI.LengthInBufferCells(s.Substring(i + 1));
-
-                    if (leftover > 0)
-                    {
-                        Coordinates c = RawUI.CursorPosition;
-
-                        // before cleaning up the screen, read the active screen buffer to retrieve the character that
-                        // is overridden by the tab
-                        char charUnderCursor = GetCharacterUnderCursor(c);
-
-                        Write(StringUtil.Padding(leftover));
-                        RawUI.CursorPosition = c;
-
-                        restOfLine = s[i] + (charUnderCursor + s.Substring(i + 1));
-                    }
-                    else
-                    {
-                        restOfLine += s[i];
-                    }
-
-                    s = s.Remove(i);
-
-                    break;
-                }
-#endif
-#if UNIX
-                    if (keyInfo.Key == ConsoleKey.Backspace)
-                    {
-                        if (index > 0)
+                        if (keyInfo.Key == ConsoleKey.Tab)
                         {
-                            int length = s.Length;
-                            s = s.Remove(index - 1, 1);
-                            index--;
-                            cursorCurrent = Console.CursorLeft;
-                            Console.CursorLeft = cursorLeft;
-                            Console.Out.Write(s.PadRight(length));
-                            Console.CursorLeft = cursorCurrent - 1;
+                            // This is unsupported
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        int i = s.IndexOf(Tab, StringComparison.Ordinal);
+
+                        if (endOnTab && i != -1)
+                        {
+                            // then the tab we found is the completion character.  bit 0x10 is set if the shift key was down
+                            // when the key was hit.
+
+                            if ((keyState & 0x10) == 0)
+                            {
+                                result = ReadLineResult.endedOnTab;
+                            }
+                            else if ((keyState & 0x10) > 0)
+                            {
+                                result = ReadLineResult.endedOnShiftTab;
+                            }
+                            else
+                            {
+                                // do nothing: leave the result state as it was. This is the circumstance when we've have to
+                                // do more than one iteration and the input ended on a tab or shift-tab, or the user hit
+                                // enter, or the user hit ctrl-c
+                            }
+
+                            // also clean up the screen -- if the cursor was positioned somewhere before the last character
+                            // in the input buffer, then the characters from the tab to the end of the buffer need to be
+                            // erased.
+                            int leftover = RawUI.LengthInBufferCells(s.Substring(i + 1));
+
+                            if (leftover > 0)
+                            {
+                                Coordinates c = RawUI.CursorPosition;
+
+                                // before cleaning up the screen, read the active screen buffer to retrieve the character that
+                                // is overridden by the tab
+                                char charUnderCursor = GetCharacterUnderCursor(c);
+
+                                Write(StringUtil.Padding(leftover));
+                                RawUI.CursorPosition = c;
+
+                                restOfLine = s[i] + (charUnderCursor + s.Substring(i + 1));
+                            }
+                            else
+                            {
+                                restOfLine += s[i];
+                            }
+
+                            s = s.Remove(i);
+
+                            break;
+                        }
+                    }
+                    if (!Platform.IsWindows)
+                    {
+                        if (keyInfo.Key == ConsoleKey.Backspace)
+                        {
+                            if (index > 0)
+                            {
+                                int length = s.Length;
+                                s = s.Remove(index - 1, 1);
+                                index--;
+                                cursorCurrent = Console.CursorLeft;
+                                Console.CursorLeft = cursorLeft;
+                                Console.Out.Write(s.PadRight(length));
+                                Console.CursorLeft = cursorCurrent - 1;
+                            }
+
+                            continue;
                         }
 
-                        continue;
-                    }
-
-                    if (keyInfo.Key == ConsoleKey.Delete
-                        || (keyInfo.Key == ConsoleKey.D && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
-                    {
-                        if (index < s.Length)
+                        if (keyInfo.Key == ConsoleKey.Delete
+                            || (keyInfo.Key == ConsoleKey.D && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
                         {
-                            int length = s.Length;
+                            if (index < s.Length)
+                            {
+                                int length = s.Length;
+                                s = s.Remove(index, 1);
+                                cursorCurrent = Console.CursorLeft;
+                                Console.CursorLeft = cursorLeft;
+                                Console.Out.Write(s.PadRight(length));
+                                Console.CursorLeft = cursorCurrent;
+                            }
+
+                            continue;
+                        }
+
+                        if (keyInfo.Key == ConsoleKey.LeftArrow
+                            || (keyInfo.Key == ConsoleKey.B && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
+                        {
+                            if (Console.CursorLeft > cursorLeft)
+                            {
+                                Console.CursorLeft--;
+                                index--;
+                            }
+
+                            continue;
+                        }
+
+                        if (keyInfo.Key == ConsoleKey.RightArrow
+                            || (keyInfo.Key == ConsoleKey.F && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
+                        {
+                            if (Console.CursorLeft < cursorLeft + s.Length)
+                            {
+                                Console.CursorLeft++;
+                                index++;
+                            }
+
+                            continue;
+                        }
+
+                        if (keyInfo.Key == ConsoleKey.UpArrow
+                            || keyInfo.Key == ConsoleKey.DownArrow
+                            || keyInfo.Key == ConsoleKey.PageUp
+                            || keyInfo.Key == ConsoleKey.PageDown)
+                        {
+                            // Arrow/Page Up/down is unimplemented, so fail gracefully
+                            continue;
+                        }
+
+                        if (keyInfo.Key == ConsoleKey.Home
+                            || (keyInfo.Key == ConsoleKey.A && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
+                        {
+                            Console.CursorLeft = cursorLeft;
+                            index = 0;
+                            continue;
+                        }
+
+                        if (keyInfo.Key == ConsoleKey.End
+                            || (keyInfo.Key == ConsoleKey.E && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
+                        {
+                            Console.CursorLeft = cursorLeft + s.Length;
+                            index = s.Length;
+                            continue;
+                        }
+
+                        if (keyInfo.Key == ConsoleKey.Escape)
+                        {
+                            Console.CursorLeft = cursorLeft;
+                            index = s.Length;
+                            s = string.Empty;
+                            continue;
+                        }
+
+                        if (keyInfo.Key == ConsoleKey.Insert)
+                        {
+                            // Toggle insert/overwrite mode
+                            insertMode = !insertMode;
+                            continue;
+                        }
+
+                        if (char.IsControl(keyInfo.KeyChar))
+                        {
+                            // blacklist control characters
+                            continue;
+                        }
+
+                        // Handle case where terminal gets reset and the index is outside of the buffer
+                        if (index > s.Length)
+                        {
+                            index = s.Length;
+                        }
+
+                        // Modify string
+                        if (!insertMode && index < s.Length) // then overwrite mode
+                        {
                             s = s.Remove(index, 1);
-                            cursorCurrent = Console.CursorLeft;
-                            Console.CursorLeft = cursorLeft;
-                            Console.Out.Write(s.PadRight(length));
-                            Console.CursorLeft = cursorCurrent;
                         }
 
-                        continue;
-                    }
+                        s = s.Insert(index, keyInfo.KeyChar.ToString());
+                        index++;
 
-                    if (keyInfo.Key == ConsoleKey.LeftArrow
-                        || (keyInfo.Key == ConsoleKey.B && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
-                    {
-                        if (Console.CursorLeft > cursorLeft)
-                        {
-                            Console.CursorLeft--;
-                            index--;
-                        }
-
-                        continue;
-                    }
-
-                    if (keyInfo.Key == ConsoleKey.RightArrow
-                        || (keyInfo.Key == ConsoleKey.F && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
-                    {
-                        if (Console.CursorLeft < cursorLeft + s.Length)
-                        {
-                            Console.CursorLeft++;
-                            index++;
-                        }
-
-                        continue;
-                    }
-
-                    if (keyInfo.Key == ConsoleKey.UpArrow
-                        || keyInfo.Key == ConsoleKey.DownArrow
-                        || keyInfo.Key == ConsoleKey.PageUp
-                        || keyInfo.Key == ConsoleKey.PageDown)
-                    {
-                        // Arrow/Page Up/down is unimplemented, so fail gracefully
-                        continue;
-                    }
-
-                    if (keyInfo.Key == ConsoleKey.Home
-                        || (keyInfo.Key == ConsoleKey.A && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
-                    {
+                        // Redisplay string
+                        cursorCurrent = Console.CursorLeft;
                         Console.CursorLeft = cursorLeft;
-                        index = 0;
-                        continue;
+                        Console.Out.Write(s);
+                        Console.CursorLeft = cursorCurrent + 1;
                     }
-
-                    if (keyInfo.Key == ConsoleKey.End
-                        || (keyInfo.Key == ConsoleKey.E && keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control)))
-                    {
-                        Console.CursorLeft = cursorLeft + s.Length;
-                        index = s.Length;
-                        continue;
-                    }
-
-                    if (keyInfo.Key == ConsoleKey.Escape)
-                    {
-                        Console.CursorLeft = cursorLeft;
-                        index = s.Length;
-                        s = string.Empty;
-                        continue;
-                    }
-
-                    if (keyInfo.Key == ConsoleKey.Insert)
-                    {
-                        // Toggle insert/overwrite mode
-                        insertMode = !insertMode;
-                        continue;
-                    }
-
-                    if (char.IsControl(keyInfo.KeyChar))
-                    {
-                        // blacklist control characters
-                        continue;
-                    }
-
-                    // Handle case where terminal gets reset and the index is outside of the buffer
-                    if (index > s.Length)
-                    {
-                        index = s.Length;
-                    }
-
-                    // Modify string
-                    if (!insertMode && index < s.Length) // then overwrite mode
-                    {
-                        s = s.Remove(index, 1);
-                    }
-
-                    s = s.Insert(index, keyInfo.KeyChar.ToString());
-                    index++;
-
-                    // Redisplay string
-                    cursorCurrent = Console.CursorLeft;
-                    Console.CursorLeft = cursorLeft;
-                    Console.Out.Write(s);
-                    Console.CursorLeft = cursorCurrent + 1;
-#endif
                 }
                 while (true);
 
@@ -1704,13 +1735,14 @@ namespace Microsoft.PowerShell
                            "s should only be null if input ended with a break");
 
                 return s;
-#if UNIX
             }
             finally
             {
-                Console.TreatControlCAsInput = treatControlCAsInput;
+                if (!Platform.IsWindows)
+                {
+                    Console.TreatControlCAsInput = treatControlCAsInput;
+                }
             }
-#endif
         }
 
 #if !UNIX
@@ -1813,118 +1845,120 @@ namespace Microsoft.PowerShell
                     break;
                 }
 
-#if UNIX // Portable code only ends on enter (or no input), so tab is not processed
-                throw new PlatformNotSupportedException("This readline state is unsupported in portable code!");
-#else
-
-                Coordinates endOfInputCursorPos = RawUI.CursorPosition;
-                string completedInput = null;
-
-                if (rlResult == ReadLineResult.endedOnTab || rlResult == ReadLineResult.endedOnShiftTab)
+                if (!Platform.IsWindows)
                 {
-                    int tabIndex = input.IndexOf(Tab, StringComparison.Ordinal);
-                    Dbg.Assert(tabIndex != -1, "tab should appear in the input");
-
-                    string restOfLine = string.Empty;
-                    int leftover = input.Length - tabIndex - 1;
-                    if (leftover > 0)
-                    {
-                        // We are reading from the console (not redirected, b/c we don't end on tab when redirected)
-                        // If the cursor is at the end of a line, there is actually a space character at the cursor's position and when we type tab
-                        // at the end of a line, that space character is replaced by the tab. But when we type tab at the middle of a line, the space
-                        // character at the end is preserved, we should remove that space character because it's not provided by the user.
-                        input = input.Remove(input.Length - 1);
-                        restOfLine = input.Substring(tabIndex + 1);
-                    }
-
-                    input = input.Remove(tabIndex);
-
-                    if (input != lastCompletion || commandCompletion == null)
-                    {
-                        completionInput = input;
-                        commandCompletion = GetNewCompletionResults(input);
-                    }
-
-                    var completionResult = commandCompletion.GetNextResult(rlResult == ReadLineResult.endedOnTab);
-                    if (completionResult != null)
-                    {
-                        completedInput = completionInput.Substring(0, commandCompletion.ReplacementIndex)
-                                         + completionResult.CompletionText;
-                    }
-                    else
-                    {
-                        completedInput = completionInput;
-                    }
-
-                    if (restOfLine != string.Empty)
-                    {
-                        completedInput += restOfLine;
-                    }
-
-                    if (completedInput.Length > (maxInputLineLength - 2))
-                    {
-                        completedInput = completedInput.Substring(0, maxInputLineLength - 2);
-                    }
-
-                    // Remove any nulls from the string...
-                    completedInput = RemoveNulls(completedInput);
-
-                    // adjust the saved cursor position if the buffer scrolled as the user was typing (i.e. the user
-                    // typed past the end of the buffer).
-
-                    int linesOfInput = (endOfPromptCursorPos.X + input.Length) / screenBufferSize.Width;
-                    endOfPromptCursorPos.Y = endOfInputCursorPos.Y - linesOfInput;
-
-                    // replace the displayed input with the new input
-                    try
-                    {
-                        RawUI.CursorPosition = endOfPromptCursorPos;
-                    }
-                    catch (PSArgumentOutOfRangeException)
-                    {
-                        // If we go a range exception, it's because
-                        // there's no room in the buffer for the completed
-                        // line so we'll just pretend that there was no match...
-                        break;
-                    }
-
-                    // When the string is written to the console, a space character is actually appended to the string
-                    // and the cursor will flash at the position of that space character.
-                    WriteToConsole(completedInput, false);
-
-                    Coordinates endOfCompletionCursorPos = RawUI.CursorPosition;
-
-                    // adjust the starting cursor position if the screen buffer has scrolled as a result of writing the
-                    // completed input (i.e. writing the completed input ran past the end of the buffer).
-
-                    int linesOfCompletedInput = (endOfPromptCursorPos.X + completedInput.Length) / screenBufferSize.Width;
-                    endOfPromptCursorPos.Y = endOfCompletionCursorPos.Y - linesOfCompletedInput;
-
-                    // blank out any "leftover" old input.  That's everything between the cursor position at the time
-                    // the user hit tab up to the current cursor position after writing the completed text.
-
-                    int deltaInput =
-                        (endOfInputCursorPos.Y * screenBufferSize.Width + endOfInputCursorPos.X)
-                        - (endOfCompletionCursorPos.Y * screenBufferSize.Width + endOfCompletionCursorPos.X);
-
-                    if (deltaInput > 0)
-                    {
-                        ConsoleControl.FillConsoleOutputCharacter(handle, ' ', deltaInput, endOfCompletionCursorPos);
-                    }
-
-                    if (restOfLine != string.Empty)
-                    {
-                        lastCompletion = completedInput.Remove(completedInput.Length - restOfLine.Length);
-                        SendLeftArrows(restOfLine.Length);
-                    }
-                    else
-                    {
-                        lastCompletion = completedInput;
-                    }
-
-                    lastInput = completedInput;
+                    throw new PlatformNotSupportedException("This readline state is unsupported in portable code!");
                 }
-#endif
+                else
+                {
+                    Coordinates endOfInputCursorPos = RawUI.CursorPosition;
+                    string completedInput = null;
+
+                    if (rlResult == ReadLineResult.endedOnTab || rlResult == ReadLineResult.endedOnShiftTab)
+                    {
+                        int tabIndex = input.IndexOf(Tab, StringComparison.Ordinal);
+                        Dbg.Assert(tabIndex != -1, "tab should appear in the input");
+
+                        string restOfLine = string.Empty;
+                        int leftover = input.Length - tabIndex - 1;
+                        if (leftover > 0)
+                        {
+                            // We are reading from the console (not redirected, b/c we don't end on tab when redirected)
+                            // If the cursor is at the end of a line, there is actually a space character at the cursor's position and when we type tab
+                            // at the end of a line, that space character is replaced by the tab. But when we type tab at the middle of a line, the space
+                            // character at the end is preserved, we should remove that space character because it's not provided by the user.
+                            input = input.Remove(input.Length - 1);
+                            restOfLine = input.Substring(tabIndex + 1);
+                        }
+
+                        input = input.Remove(tabIndex);
+
+                        if (input != lastCompletion || commandCompletion == null)
+                        {
+                            completionInput = input;
+                            commandCompletion = GetNewCompletionResults(input);
+                        }
+
+                        var completionResult = commandCompletion.GetNextResult(rlResult == ReadLineResult.endedOnTab);
+                        if (completionResult != null)
+                        {
+                            completedInput = completionInput.Substring(0, commandCompletion.ReplacementIndex)
+                                             + completionResult.CompletionText;
+                        }
+                        else
+                        {
+                            completedInput = completionInput;
+                        }
+
+                        if (restOfLine != string.Empty)
+                        {
+                            completedInput += restOfLine;
+                        }
+
+                        if (completedInput.Length > (maxInputLineLength - 2))
+                        {
+                            completedInput = completedInput.Substring(0, maxInputLineLength - 2);
+                        }
+
+                        // Remove any nulls from the string...
+                        completedInput = RemoveNulls(completedInput);
+
+                        // adjust the saved cursor position if the buffer scrolled as the user was typing (i.e. the user
+                        // typed past the end of the buffer).
+
+                        int linesOfInput = (endOfPromptCursorPos.X + input.Length) / screenBufferSize.Width;
+                        endOfPromptCursorPos.Y = endOfInputCursorPos.Y - linesOfInput;
+
+                        // replace the displayed input with the new input
+                        try
+                        {
+                            RawUI.CursorPosition = endOfPromptCursorPos;
+                        }
+                        catch (PSArgumentOutOfRangeException)
+                        {
+                            // If we go a range exception, it's because
+                            // there's no room in the buffer for the completed
+                            // line so we'll just pretend that there was no match...
+                            break;
+                        }
+
+                        // When the string is written to the console, a space character is actually appended to the string
+                        // and the cursor will flash at the position of that space character.
+                        WriteToConsole(completedInput, false);
+
+                        Coordinates endOfCompletionCursorPos = RawUI.CursorPosition;
+
+                        // adjust the starting cursor position if the screen buffer has scrolled as a result of writing the
+                        // completed input (i.e. writing the completed input ran past the end of the buffer).
+
+                        int linesOfCompletedInput = (endOfPromptCursorPos.X + completedInput.Length) / screenBufferSize.Width;
+                        endOfPromptCursorPos.Y = endOfCompletionCursorPos.Y - linesOfCompletedInput;
+
+                        // blank out any "leftover" old input.  That's everything between the cursor position at the time
+                        // the user hit tab up to the current cursor position after writing the completed text.
+
+                        int deltaInput =
+                            (endOfInputCursorPos.Y * screenBufferSize.Width + endOfInputCursorPos.X)
+                            - (endOfCompletionCursorPos.Y * screenBufferSize.Width + endOfCompletionCursorPos.X);
+
+                        if (deltaInput > 0)
+                        {
+                            ConsoleControl.FillConsoleOutputCharacter(handle, ' ', deltaInput, endOfCompletionCursorPos);
+                        }
+
+                        if (restOfLine != string.Empty)
+                        {
+                            lastCompletion = completedInput.Remove(completedInput.Length - restOfLine.Length);
+                            SendLeftArrows(restOfLine.Length);
+                        }
+                        else
+                        {
+                            lastCompletion = completedInput;
+                        }
+
+                        lastInput = completedInput;
+                    }
+                }
             }
             while (true);
 

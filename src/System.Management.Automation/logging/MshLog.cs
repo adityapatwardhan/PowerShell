@@ -139,13 +139,16 @@ namespace System.Management.Automation
                 providers.Add(eventLogLogProvider);
 #endif
 
-#if UNIX
-                LogProvider sysLogProvider = new PSSysLogProvider();
-                providers.Add(sysLogProvider);
-#else
-                LogProvider etwLogProvider = new PSEtwLogProvider();
-                providers.Add(etwLogProvider);
-#endif
+                if (!Platform.IsWindows)
+                {
+                    LogProvider sysLogProvider = new PSSysLogProvider();
+                    providers.Add(sysLogProvider);
+                }
+                else
+                {
+                    LogProvider etwLogProvider = new PSEtwLogProvider();
+                    providers.Add(etwLogProvider);
+                }
 
                 return providers;
             }

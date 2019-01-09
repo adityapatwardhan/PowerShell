@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
 using Xunit;
+using Xunit.SkippableFact;
 
 namespace PSTests.Parallel
 {
@@ -17,10 +18,11 @@ namespace PSTests.Parallel
             Assert.True(Platform.IsCoreCLR);
         }
 
-#if Unix
-        [Fact]
+        [SkippableFact]
         public static void TestGetUserName()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = @"/usr/bin/env",
@@ -41,9 +43,11 @@ namespace PSTests.Parallel
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestGetMachineName()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = @"/usr/bin/env",
@@ -64,9 +68,11 @@ namespace PSTests.Parallel
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestGetFQDN()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = @"/usr/bin/env",
@@ -87,27 +93,32 @@ namespace PSTests.Parallel
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestIsExecutable()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
             Assert.True(Platform.NonWindowsIsExecutable("/bin/ls"));
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestIsNotExecutable()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
             Assert.False(Platform.NonWindowsIsExecutable("/etc/hosts"));
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestDirectoryIsNotExecutable()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
             Assert.False(Platform.NonWindowsIsExecutable("/etc"));
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestFileIsNotHardLink()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             string path = @"/tmp/nothardlink";
             if (File.Exists(path))
             {
@@ -125,9 +136,11 @@ namespace PSTests.Parallel
             File.Delete(path);
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestFileIsHardLink()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             string path = @"/tmp/originallink";
             if (File.Exists(path))
             {
@@ -169,9 +182,11 @@ namespace PSTests.Parallel
             File.Delete(link);
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestDirectoryIsNotHardLink()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             string path = @"/tmp";
 
             FileSystemInfo fd = new FileInfo(path);
@@ -179,9 +194,11 @@ namespace PSTests.Parallel
             Assert.False(Platform.NonWindowsIsHardLink(fd));
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestNonExistentIsHardLink()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             // A file that should *never* exist on a test machine:
             string path = @"/tmp/ThisFileShouldNotExistOnTestMachines";
 
@@ -193,9 +210,11 @@ namespace PSTests.Parallel
             Assert.False(Platform.NonWindowsIsHardLink(fd));
         }
 
-        [Fact]
+        [SkippableFact]
         public static void TestFileIsSymLink()
         {
+            Skip.IfNot(Environment.OSVersion.Platform == PlatformID.Unix);
+
             string path = @"/tmp/originallink";
             if (File.Exists(path))
             {
@@ -234,6 +253,5 @@ namespace PSTests.Parallel
             File.Delete(path);
             File.Delete(link);
         }
-#endif
     }
 }

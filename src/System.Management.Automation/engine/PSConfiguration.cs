@@ -244,7 +244,6 @@ namespace System.Management.Automation.Configuration
             return ReadValueFromFile<PowerShellPolicies>(scope, nameof(PowerShellPolicies));
         }
 
-#if UNIX
         /// <summary>
         /// Gets the identity name to use for writing to syslog.
         /// </summary>
@@ -253,6 +252,11 @@ namespace System.Management.Automation.Configuration
         /// </returns>
         internal string GetSysLogIdentity()
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             string identity = ReadValueFromFile<string>(ConfigScope.AllUsers, "LogIdentity");
 
             if (string.IsNullOrEmpty(identity) ||
@@ -272,6 +276,11 @@ namespace System.Management.Automation.Configuration
         /// </returns>
         internal PSLevel GetLogLevel()
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             string levelName = ReadValueFromFile<string>(ConfigScope.AllUsers, "LogLevel");
             PSLevel level;
 
@@ -303,6 +312,11 @@ namespace System.Management.Automation.Configuration
         /// </returns>
         internal PSChannel GetLogChannels()
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             string values = ReadValueFromFile<string>(ConfigScope.AllUsers, "LogChannels");
 
             PSChannel result = 0;
@@ -342,6 +356,11 @@ namespace System.Management.Automation.Configuration
         /// </returns>
         internal PSKeyword GetLogKeywords()
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             string values = ReadValueFromFile<string>(ConfigScope.AllUsers, "LogKeywords");
 
             PSKeyword result = 0;
@@ -372,7 +391,6 @@ namespace System.Management.Automation.Configuration
 
             return result;
         }
-#endif // UNIX
 
         /// <summary>
         /// Read a value from the configuration file.

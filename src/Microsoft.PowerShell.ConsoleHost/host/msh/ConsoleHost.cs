@@ -123,16 +123,21 @@ namespace Microsoft.PowerShell
             try
             {
                 string profileDir;
-#if UNIX
-                profileDir = Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE);
-#else
-                profileDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Microsoft\PowerShell";
 
-                if (!Directory.Exists(profileDir))
+                if (!Platform.IsWindows)
                 {
-                    Directory.CreateDirectory(profileDir);
+                    profileDir = Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE);
                 }
-#endif
+                else
+                {
+                    profileDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Microsoft\PowerShell";
+
+                    if (!Directory.Exists(profileDir))
+                    {
+                        Directory.CreateDirectory(profileDir);
+                    }
+                }
+
                 ClrFacade.SetProfileOptimizationRoot(profileDir);
             }
             catch
@@ -165,11 +170,12 @@ namespace Microsoft.PowerShell
 
                 s_cpp.Parse(args);
 
-#if UNIX
-                // On Unix, logging has to be deferred until after command-line parsing
-                // completes to allow overriding logging options.
-                PSEtwLog.LogConsoleStartup();
-#endif
+                if (!Platform.IsWindows)
+                {
+                    // On Unix, logging has to be deferred until after command-line parsing
+                    // completes to allow overriding logging options.
+                    PSEtwLog.LogConsoleStartup();
+                }
 
                 if (s_cpp.ShowVersion)
                 {
@@ -270,11 +276,11 @@ namespace Microsoft.PowerShell
 
         private static CommandLineParameterParser s_cpp;
 
-#if UNIX
+
         /// <summary>
         /// The break handler for the program.  Dispatches a break event to the current Executor.
         /// </summary>
-        private static void MyBreakHandler(object sender, ConsoleCancelEventArgs args)
+        private static void MyBreakHandlerUnix(object sender, ConsoleCancelEventArgs args)
         {
             // Set the Cancel property to true to prevent the process from terminating.
             args.Cancel = true;
@@ -298,13 +304,13 @@ namespace Microsoft.PowerShell
                     return;
             }
         }
-#else
+
         /// <summary>
         /// The break handler for the program.  Dispatches a break event to the current Executor.
         /// </summary>
         /// <param name="signal"></param>
         /// <returns></returns>
-        private static bool MyBreakHandler(ConsoleControl.ConsoleBreakSignal signal)
+        private static bool MyBreakHandlerWindows(ConsoleControl.ConsoleBreakSignal signal)
         {
             switch (signal)
             {
@@ -345,7 +351,6 @@ namespace Microsoft.PowerShell
                     return false;
             }
         }
-#endif
 
         private static bool BreakIntoDebugger()
         {
@@ -1075,12 +1080,15 @@ namespace Microsoft.PowerShell
 
         private void BindBreakHandler()
         {
-#if UNIX
-            Console.CancelKeyPress += new ConsoleCancelEventHandler(MyBreakHandler);
-#else
-            breakHandlerGcHandle = GCHandle.Alloc(new ConsoleControl.BreakHandler(MyBreakHandler));
-            ConsoleControl.AddBreakHandler((ConsoleControl.BreakHandler)breakHandlerGcHandle.Target);
-#endif
+            if (!Platform.IsWindows)
+            {
+                Console.CancelKeyPress += new ConsoleCancelEventHandler(MyBreakHandlerUnix);
+            }
+            else
+            {
+                breakHandlerGcHandle = GCHandle.Alloc(new ConsoleControl.BreakHandler(MyBreakHandlerWindows));
+                ConsoleControl.AddBreakHandler((ConsoleControl.BreakHandler)breakHandlerGcHandle.Target);
+            }
         }
 
         private void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs args)

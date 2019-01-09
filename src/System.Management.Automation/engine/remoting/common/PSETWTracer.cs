@@ -204,20 +204,11 @@ namespace System.Management.Automation.Internal
     /// the underlying channel bitmask values are used instead.
     /// The bit values are the same as used on Windows.
     /// </remarks>
-#if UNIX
-    [Flags]
-    internal enum PSChannel : byte
+    internal static class PSChannel
     {
-        Operational = 0x80,
-        Analytic = 0x40
+        internal static byte Operational => Platform.IsWindows ? (byte)0x10 : (byte)0x80;
+        internal static byte Analytic => Platform.IsWindows ? (byte)0x11 : (byte)0x40;
     }
-#else
-    internal enum PSChannel : byte
-    {
-        Operational = 0x10,
-        Analytic = 0x11
-    }
-#endif
 
     /// <summary>
     /// Defines enumerations for tasks.

@@ -499,67 +499,70 @@ namespace Microsoft.PowerShell
         /// </summary>
         public static byte[] Unprotect(byte[] encryptedData, byte[] optionalEntropy, DataProtectionScope scope)
         {
-#if UNIX
-            throw new PlatformNotSupportedException(Serialization.DeserializeSecureStringNotSupported);
-#else
-            if (encryptedData == null)
-                throw new ArgumentNullException("encryptedData");
-
-            GCHandle pbDataIn = new GCHandle();
-            GCHandle pOptionalEntropy = new GCHandle();
-            CAPI.CRYPTOAPI_BLOB userData = new CAPI.CRYPTOAPI_BLOB();
-
-            try
+            if (!Platform.IsWindows)
             {
-                pbDataIn = GCHandle.Alloc(encryptedData, GCHandleType.Pinned);
-                CAPI.CRYPTOAPI_BLOB dataIn = new CAPI.CRYPTOAPI_BLOB();
-                dataIn.cbData = (uint)encryptedData.Length;
-                dataIn.pbData = pbDataIn.AddrOfPinnedObject();
-                CAPI.CRYPTOAPI_BLOB entropy = new CAPI.CRYPTOAPI_BLOB();
-                if (optionalEntropy != null)
-                {
-                    pOptionalEntropy = GCHandle.Alloc(optionalEntropy, GCHandleType.Pinned);
-                    entropy.cbData = (uint)optionalEntropy.Length;
-                    entropy.pbData = pOptionalEntropy.AddrOfPinnedObject();
-                }
-
-                uint dwFlags = CAPI.CRYPTPROTECT_UI_FORBIDDEN;
-                if (scope == DataProtectionScope.LocalMachine)
-                    dwFlags |= CAPI.CRYPTPROTECT_LOCAL_MACHINE;
-                unsafe
-                {
-                    if (!CAPI.CryptUnprotectData(new IntPtr(&dataIn),
-                                                 IntPtr.Zero,
-                                                 new IntPtr(&entropy),
-                                                 IntPtr.Zero,
-                                                 IntPtr.Zero,
-                                                 dwFlags,
-                                                 new IntPtr(&userData)))
-                        throw new CryptographicException(Marshal.GetLastWin32Error());
-                }
-
-                // In some cases, the API would fail due to OOM but simply return a null pointer.
-                if (userData.pbData == IntPtr.Zero)
-                    throw new OutOfMemoryException();
-
-                byte[] data = new byte[(int)userData.cbData];
-                Marshal.Copy(userData.pbData, data, 0, data.Length);
-
-                return data;
+                throw new PlatformNotSupportedException(Serialization.DeserializeSecureStringNotSupported);
             }
-            finally
+            else
             {
-                if (pbDataIn.IsAllocated)
-                    pbDataIn.Free();
-                if (pOptionalEntropy.IsAllocated)
-                    pOptionalEntropy.Free();
-                if (userData.pbData != IntPtr.Zero)
+                if (encryptedData == null)
+                    throw new ArgumentNullException("encryptedData");
+
+                GCHandle pbDataIn = new GCHandle();
+                GCHandle pOptionalEntropy = new GCHandle();
+                CAPI.CRYPTOAPI_BLOB userData = new CAPI.CRYPTOAPI_BLOB();
+
+                try
                 {
-                    CAPI.ZeroMemory(userData.pbData, userData.cbData);
-                    CAPI.LocalFree(userData.pbData);
+                    pbDataIn = GCHandle.Alloc(encryptedData, GCHandleType.Pinned);
+                    CAPI.CRYPTOAPI_BLOB dataIn = new CAPI.CRYPTOAPI_BLOB();
+                    dataIn.cbData = (uint)encryptedData.Length;
+                    dataIn.pbData = pbDataIn.AddrOfPinnedObject();
+                    CAPI.CRYPTOAPI_BLOB entropy = new CAPI.CRYPTOAPI_BLOB();
+                    if (optionalEntropy != null)
+                    {
+                        pOptionalEntropy = GCHandle.Alloc(optionalEntropy, GCHandleType.Pinned);
+                        entropy.cbData = (uint)optionalEntropy.Length;
+                        entropy.pbData = pOptionalEntropy.AddrOfPinnedObject();
+                    }
+
+                    uint dwFlags = CAPI.CRYPTPROTECT_UI_FORBIDDEN;
+                    if (scope == DataProtectionScope.LocalMachine)
+                        dwFlags |= CAPI.CRYPTPROTECT_LOCAL_MACHINE;
+                    unsafe
+                    {
+                        if (!CAPI.CryptUnprotectData(new IntPtr(&dataIn),
+                                                     IntPtr.Zero,
+                                                     new IntPtr(&entropy),
+                                                     IntPtr.Zero,
+                                                     IntPtr.Zero,
+                                                     dwFlags,
+                                                     new IntPtr(&userData)))
+                            throw new CryptographicException(Marshal.GetLastWin32Error());
+                    }
+
+                    // In some cases, the API would fail due to OOM but simply return a null pointer.
+                    if (userData.pbData == IntPtr.Zero)
+                        throw new OutOfMemoryException();
+
+                    byte[] data = new byte[(int)userData.cbData];
+                    Marshal.Copy(userData.pbData, data, 0, data.Length);
+
+                    return data;
+                }
+                finally
+                {
+                    if (pbDataIn.IsAllocated)
+                        pbDataIn.Free();
+                    if (pOptionalEntropy.IsAllocated)
+                        pOptionalEntropy.Free();
+                    if (userData.pbData != IntPtr.Zero)
+                    {
+                        CAPI.ZeroMemory(userData.pbData, userData.cbData);
+                        CAPI.LocalFree(userData.pbData);
+                    }
                 }
             }
-#endif
         }
     }
 

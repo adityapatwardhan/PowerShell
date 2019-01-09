@@ -11,11 +11,8 @@ namespace System.Management.Automation.Help
     /// </summary>
     internal class UpdatableHelpModuleInfo
     {
-#if UNIX
-        internal static readonly string HelpContentZipName = "HelpContent.zip";
-#else
-        internal static readonly string HelpContentZipName = "HelpContent.cab";
-#endif
+        internal static readonly string HelpContentZipName = Platform.IsWindows ? "HelpContent.cab" : "HelpContent.zip";
+
         internal static readonly string HelpIntoXmlName = "HelpInfo.xml";
 
         /// <summary>

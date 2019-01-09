@@ -396,13 +396,7 @@ namespace Microsoft.PowerShell.Commands
         private const string ProcessIdParameterSet = "ProcessIdParameterSet";
         private const string ProcessNameParameterSet = "ProcessNameParameterSet";
 
-#if UNIX
-        // CoreFx uses the system temp path to store the file used for named pipes and is not settable.
-        // This member is only used by Get-PSHostProcessInfo to know where to look for the named pipe files.
-        private static readonly string NamedPipePath = Path.GetTempPath();
-#else
-        private const string NamedPipePath = @"\\.\pipe\";
-#endif
+        private static readonly string NamedPipePath = Platform.IsWindows ? @"\\.\pipe\" : Path.GetTempPath();
 
         #endregion
 

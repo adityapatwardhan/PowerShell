@@ -12,22 +12,21 @@ namespace System.Management.Automation.Tracing
     /// </summary>
     internal static class PSEtwLog
     {
-#if UNIX
-        private static PSSysLogProvider provider;
-#else
-        private static PSEtwLogProvider provider;
-#endif
+        private static LogProvider provider;
 
         /// <summary>
         /// Class constructor.
         /// </summary>
         static PSEtwLog()
         {
-#if UNIX
-            provider = new PSSysLogProvider();
-#else
-            provider = new PSEtwLogProvider();
-#endif
+            if (Platform.IsWindows)
+            {
+                provider = new PSEtwLogProvider();
+            }
+            else
+            {
+                provider = new PSSysLogProvider();
+            }
         }
 
         internal static void LogConsoleStartup()

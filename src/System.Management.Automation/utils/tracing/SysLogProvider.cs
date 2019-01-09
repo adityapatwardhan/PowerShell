@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-#if UNIX
 
 using System;
 using System.Diagnostics;
@@ -95,6 +94,11 @@ namespace System.Management.Automation.Tracing
         /// <param name="channels">The output channels to enable.</param>
         public SysLogProvider(string applicationId, PSLevel level, PSKeyword keywords, PSChannel channels)
         {
+            if (Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             // NOTE: This string needs to remain valid for the life of the process since the underlying API keeps
             // a reference to it.
             // FUTURE: If logging is redesigned, make these details static or a singleton since there should only be one
@@ -536,5 +540,3 @@ namespace System.Management.Automation.Tracing
         }
     }
 }
-
-#endif // UNIX

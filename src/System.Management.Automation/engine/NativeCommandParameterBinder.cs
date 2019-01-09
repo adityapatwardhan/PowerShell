@@ -246,82 +246,83 @@ namespace System.Management.Automation
         {
             var argExpanded = false;
 
-#if UNIX
-            // On UNIX systems, we expand arguments containing wildcard expressions against
-            // the file system just like bash, etc.
-            if (!usedQuotes && WildcardPattern.ContainsWildcardCharacters(arg))
+            if (!Platform.IsWindows)
             {
-                // See if the current working directory is a filesystem provider location
-                // We won't do the expansion if it isn't since native commands can only access the file system.
-                var cwdinfo = Context.EngineSessionState.CurrentLocation;
-
-                // If it's a filesystem location then expand the wildcards
-                if (cwdinfo.Provider.Name.Equals(FileSystemProvider.ProviderName, StringComparison.OrdinalIgnoreCase))
+                // On UNIX systems, we expand arguments containing wildcard expressions against
+                // the file system just like bash, etc.
+                if (!usedQuotes && WildcardPattern.ContainsWildcardCharacters(arg))
                 {
-                    // On UNIX, paths starting with ~ or absolute paths are not normalized
-                    bool normalizePath = arg.Length == 0 || !(arg[0] == '~' || arg[0] == '/');
+                    // See if the current working directory is a filesystem provider location
+                    // We won't do the expansion if it isn't since native commands can only access the file system.
+                    var cwdinfo = Context.EngineSessionState.CurrentLocation;
 
-                    // See if there are any matching paths otherwise just add the pattern as the argument
-                    Collection<PSObject> paths = null;
-                    try
+                    // If it's a filesystem location then expand the wildcards
+                    if (cwdinfo.Provider.Name.Equals(FileSystemProvider.ProviderName, StringComparison.OrdinalIgnoreCase))
                     {
-                        paths = Context.EngineSessionState.InvokeProvider.ChildItem.Get(arg, false);
-                    }
-                    catch
-                    {
-                        // Fallthrough will append the pattern unchanged.
-                    }
+                        // On UNIX, paths starting with ~ or absolute paths are not normalized
+                        bool normalizePath = arg.Length == 0 || !(arg[0] == '~' || arg[0] == '/');
 
-                    // Expand paths, but only from the file system.
-                    if (paths?.Count > 0 && paths.All(p => p.BaseObject is FileSystemInfo))
-                    {
-                        var sep = string.Empty;
-                        foreach (var path in paths)
+                        // See if there are any matching paths otherwise just add the pattern as the argument
+                        Collection<PSObject> paths = null;
+                        try
                         {
-                            _arguments.Append(sep);
-                            sep = " ";
-                            var expandedPath = (path.BaseObject as FileSystemInfo).FullName;
-                            if (normalizePath)
-                            {
-                                expandedPath =
-                                    Context.SessionState.Path.NormalizeRelativePath(expandedPath, cwdinfo.ProviderPath);
-                            }
-                            // If the path contains spaces, then add quotes around it.
-                            if (NeedQuotes(expandedPath))
-                            {
-                                _arguments.Append("\"");
-                                _arguments.Append(expandedPath);
-                                _arguments.Append("\"");
-                            }
-                            else
-                            {
-                                _arguments.Append(expandedPath);
-                            }
+                            paths = Context.EngineSessionState.InvokeProvider.ChildItem.Get(arg, false);
+                        }
+                        catch
+                        {
+                            // Fallthrough will append the pattern unchanged.
+                        }
 
-                            argExpanded = true;
+                        // Expand paths, but only from the file system.
+                        if (paths?.Count > 0 && paths.All(p => p.BaseObject is FileSystemInfo))
+                        {
+                            var sep = string.Empty;
+                            foreach (var path in paths)
+                            {
+                                _arguments.Append(sep);
+                                sep = " ";
+                                var expandedPath = (path.BaseObject as FileSystemInfo).FullName;
+                                if (normalizePath)
+                                {
+                                    expandedPath =
+                                        Context.SessionState.Path.NormalizeRelativePath(expandedPath, cwdinfo.ProviderPath);
+                                }
+                                // If the path contains spaces, then add quotes around it.
+                                if (NeedQuotes(expandedPath))
+                                {
+                                    _arguments.Append("\"");
+                                    _arguments.Append(expandedPath);
+                                    _arguments.Append("\"");
+                                }
+                                else
+                                {
+                                    _arguments.Append(expandedPath);
+                                }
+
+                                argExpanded = true;
+                            }
                         }
                     }
                 }
-            }
-            else if (!usedQuotes)
-            {
-                // Even if there are no wildcards, we still need to possibly
-                // expand ~ into the filesystem provider home directory path
-                ProviderInfo fileSystemProvider = Context.EngineSessionState.GetSingleProvider(FileSystemProvider.ProviderName);
-                string home = fileSystemProvider.Home;
-                if (string.Equals(arg, "~"))
+                else if (!usedQuotes)
                 {
-                    _arguments.Append(home);
-                    argExpanded = true;
-                }
-                else if (arg.StartsWith("~/", StringComparison.OrdinalIgnoreCase))
-                {
-                    var replacementString = home + arg.Substring(1);
-                    _arguments.Append(replacementString);
-                    argExpanded = true;
+                    // Even if there are no wildcards, we still need to possibly
+                    // expand ~ into the filesystem provider home directory path
+                    ProviderInfo fileSystemProvider = Context.EngineSessionState.GetSingleProvider(FileSystemProvider.ProviderName);
+                    string home = fileSystemProvider.Home;
+                    if (string.Equals(arg, "~"))
+                    {
+                        _arguments.Append(home);
+                        argExpanded = true;
+                    }
+                    else if (arg.StartsWith("~/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var replacementString = home + arg.Substring(1);
+                        _arguments.Append(replacementString);
+                        argExpanded = true;
+                    }
                 }
             }
-#endif // UNIX
 
             if (!argExpanded)
             {

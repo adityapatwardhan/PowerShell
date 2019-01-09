@@ -134,9 +134,11 @@ namespace System.Management.Automation.Internal
 
         internal static void SetExecutionPolicy(ExecutionPolicyScope scope, ExecutionPolicy policy, string shellId)
         {
-#if UNIX
-            throw new PlatformNotSupportedException();
-#else
+            if (!Platform.IsWindows)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             string executionPolicy = "Restricted";
 
             switch (policy)
@@ -195,7 +197,6 @@ namespace System.Management.Automation.Internal
                     break;
                 }
             }
-#endif
         }
 
         internal static ExecutionPolicy GetExecutionPolicy(string shellId)
@@ -276,9 +277,11 @@ namespace System.Management.Automation.Internal
 
         internal static ExecutionPolicy GetExecutionPolicy(string shellId, ExecutionPolicyScope scope)
         {
-#if UNIX
-            return ExecutionPolicy.Unrestricted;
-#else
+            if (!Platform.IsWindows)
+            {
+                return ExecutionPolicy.Unrestricted;
+            }
+
             switch (scope)
             {
                 case ExecutionPolicyScope.Process:
@@ -322,7 +325,6 @@ namespace System.Management.Automation.Internal
             }
 
             return ExecutionPolicy.Restricted;
-#endif
         }
 
         internal static ExecutionPolicy ParseExecutionPolicy(string policy)
@@ -391,11 +393,13 @@ namespace System.Management.Automation.Internal
                 return false;
             }
 
-#if UNIX
-            // There is no signature support on non-Windows platforms (yet), when
-            // execution reaches here, we are sure the file is under product folder
-            return true;
-#else
+            if (!Platform.IsWindows)
+            {
+                // There is no signature support on non-Windows platforms (yet), when
+                // execution reaches here, we are sure the file is under product folder
+                return true;
+            }
+
             // Check the file signature
             Signature fileSignature = SignatureHelper.GetSignature(file, null);
             if ((fileSignature != null) && (fileSignature.IsOSBinary))
@@ -415,7 +419,6 @@ namespace System.Management.Automation.Internal
             }
 
             return false;
-#endif
         }
 
         /// <summary>
@@ -1543,11 +1546,7 @@ namespace System.Management.Automation
         /// <returns>AMSI_RESULT_DETECTED if malware was detected in the sample.</returns>
         internal static AmsiNativeMethods.AMSI_RESULT ScanContent(string content, string sourceMetadata)
         {
-#if UNIX
-            return AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_NOT_DETECTED;
-#else
-            return WinScanContent(content, sourceMetadata, warmUp: false);
-#endif
+            return Platform.IsWindows ? WinScanContent(content, sourceMetadata, warmUp: false) : AmsiNativeMethods.AMSI_RESULT.AMSI_RESULT_NOT_DETECTED;
         }
 
         internal static AmsiNativeMethods.AMSI_RESULT WinScanContent(string content, string sourceMetadata, bool warmUp)
