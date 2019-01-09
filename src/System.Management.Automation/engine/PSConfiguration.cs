@@ -310,7 +310,7 @@ namespace System.Management.Automation.Configuration
         /// <returns>
         /// A bitmask of PSChannel.Operational and/or PSChannel.Analytic. The default value is PSChannel.Operational.
         /// </returns>
-        internal PSChannel GetLogChannels()
+        internal byte GetLogChannels()
         {
             if (Platform.IsWindows)
             {
@@ -319,7 +319,7 @@ namespace System.Management.Automation.Configuration
 
             string values = ReadValueFromFile<string>(ConfigScope.AllUsers, "LogChannels");
 
-            PSChannel result = 0;
+            byte result = 0;
             if (!string.IsNullOrEmpty(values))
             {
                 string[] names = values.Split(s_valueSeparators, StringSplitOptions.RemoveEmptyEntries);
@@ -332,8 +332,8 @@ namespace System.Management.Automation.Configuration
                         break;
                     }
 
-                    PSChannel value;
-                    if (Enum.TryParse<PSChannel>(name, true, out value))
+                    byte value;
+                    if (Enum.TryParse<byte>(name, true, out value))
                     {
                         result |= value;
                     }

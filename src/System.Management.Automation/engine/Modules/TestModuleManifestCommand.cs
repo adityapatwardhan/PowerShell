@@ -393,7 +393,6 @@ namespace Microsoft.PowerShell.Commands
             }
 
             return true;
-#endif
         }
     }
 

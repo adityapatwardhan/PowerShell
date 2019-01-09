@@ -140,7 +140,6 @@ namespace Microsoft.PowerShell.Commands
                 throw new InvalidOperationException(
                      "Windows PowerShell remoting features are not enabled or not supported on this machine.\nThis may be because you do not have the correct version of WS-Management installed or this version of Windows does not support remoting currently.\n For more information, type 'get-help about_remote_requirements'.");
             }
-#endif
         }
 
         /// <summary>

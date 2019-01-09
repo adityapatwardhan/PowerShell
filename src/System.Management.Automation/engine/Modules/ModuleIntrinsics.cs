@@ -1194,7 +1194,7 @@ namespace System.Management.Automation
         /// </summary>
         private static string RemoveSxSPsHomeModulePath(string currentProcessModulePath, string personalModulePath, string sharedModulePath, string psHomeModulePath)
         {
-            private readonly string powershellExeName = Platform.IsWindows ? "pwsh.exe" : "pwsh";
+            string powershellExeName = Platform.IsWindows ? "pwsh.exe" : "pwsh";
 
             const string powershellDepsName = "pwsh.deps.json";
 

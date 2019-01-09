@@ -20,7 +20,7 @@ namespace System.Management.Automation.Tracing
         internal const PSKeyword DefaultKeywords = (PSKeyword) (0x00FFFFFFFFFFFFFF);
 
         // the default enabled channel(s)
-        internal const PSChannel DefaultChannels = PSChannel.Operational;
+        internal static byte DefaultChannels = PSChannel.Operational;
 
         /// <summary>
         /// Class constructor.
@@ -294,7 +294,7 @@ namespace System.Management.Automation.Tracing
         /// <param name="task"></param>
         /// <param name="logContext">Log context.</param>
         /// <param name="payLoad"></param>
-        internal void WriteEvent(PSEventId id, PSChannel channel, PSOpcode opcode, PSTask task, LogContext logContext, string payLoad)
+        internal void WriteEvent(PSEventId id, byte channel, PSOpcode opcode, PSTask task, LogContext logContext, string payLoad)
         {
             s_provider.Log(id, channel, task, opcode, GetPSLevelFromSeverity(logContext.Severity), DefaultKeywords,
                            LogContextToString(logContext),
@@ -312,7 +312,7 @@ namespace System.Management.Automation.Tracing
         /// <param name="task"></param>
         /// <param name="keyword"></param>
         /// <param name="args"></param>
-        internal void WriteEvent(PSEventId id, PSChannel channel, PSOpcode opcode, PSLevel level, PSTask task, PSKeyword keyword, params object[] args)
+        internal void WriteEvent(PSEventId id, byte channel, PSOpcode opcode, PSLevel level, PSTask task, PSKeyword keyword, params object[] args)
         {
             s_provider.Log(id, channel, task, opcode, level, keyword, args);
         }

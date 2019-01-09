@@ -12,7 +12,7 @@ namespace System.Management.Automation.Tracing
     /// </summary>
     internal static class PSEtwLog
     {
-        private static LogProvider provider;
+        private static dynamic provider;
 
         /// <summary>
         /// Class constructor.
@@ -83,7 +83,7 @@ namespace System.Management.Automation.Tracing
         /// <param name="newState"></param>
         internal static void LogCommandLifecycleEvent(LogContext logContext, CommandState newState)
         {
-            provider.LogCommandLifecycleEvent(() => logContext, newState);
+            ((LogProvider) provider).LogCommandLifecycleEvent(() => logContext, newState);
         }
 
         /// <summary>

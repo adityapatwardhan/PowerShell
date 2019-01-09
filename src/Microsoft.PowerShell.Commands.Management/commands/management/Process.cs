@@ -2056,7 +2056,6 @@ namespace Microsoft.PowerShell.Commands
                             process.EnableRaisingEvents = true;
                             process.WaitForExit();
                         }
-#endif
                     }
                 }
                 else

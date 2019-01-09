@@ -266,7 +266,7 @@ namespace System.Management.Automation.Tracing
         /// <param name="task"></param>
         /// <param name="keyword"></param>
         /// <param name="args"></param>
-        internal void WriteEvent(PSEventId id, PSChannel channel, PSOpcode opcode, PSLevel level, PSTask task, PSKeyword keyword, params object[] args)
+        internal void WriteEvent(PSEventId id, byte channel, PSOpcode opcode, PSLevel level, PSTask task, PSKeyword keyword, params object[] args)
         {
             long longKeyword = 0x00;
 

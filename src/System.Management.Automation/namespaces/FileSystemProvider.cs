@@ -7752,67 +7752,65 @@ namespace Microsoft.PowerShell.Commands
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
             }
-            else if (!Platform.IsCoreCLR) // FindFirstFileName, FindNextFileName and FindClose are not available on Core Clr
+#if !CORECLR
+            UInt32 linkStringLength = 0;
+            var linkName = new StringBuilder();
+
+            // First get the length for the linkName buffer.
+            IntPtr fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
+            int lastError = Marshal.GetLastWin32Error();
+
+            // Return handle is INVALID_HANDLE_VALUE and LastError was ERROR_MORE_DATA
+            if ((fileHandle == (IntPtr)(-1)) && (lastError == 234))
             {
-                UInt32 linkStringLength = 0;
-                var linkName = new StringBuilder();
-
-                // First get the length for the linkName buffer.
-                IntPtr fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
-                int lastError = Marshal.GetLastWin32Error();
-
-                // Return handle is INVALID_HANDLE_VALUE and LastError was ERROR_MORE_DATA
-                if ((fileHandle == (IntPtr)(-1)) && (lastError == 234))
-                {
-                    linkName = new StringBuilder((int)linkStringLength);
-                    fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
-                    lastError = Marshal.GetLastWin32Error();
-                }
-
-                if (fileHandle == (IntPtr)(-1))
-                {
-                    throw new Win32Exception(lastError);
-                }
-
-                bool continueFind = false;
-
-                try
-                {
-                    do
-                    {
-                        StringBuilder fullName = new StringBuilder();
-                        fullName.Append(Path.GetPathRoot(filePath));    // hard link source and target must be on the same drive. So we can use the source for find the path root.
-                        fullName.Append(linkName.ToString());
-                        FileInfo fInfo = new FileInfo(fullName.ToString());
-
-                        // Don't add the target link to the list.
-
-                        if (string.Compare(fInfo.FullName, filePath, StringComparison.OrdinalIgnoreCase) != 0)
-                            links.Add(fInfo.FullName);
-
-                        continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
-
-                        lastError = Marshal.GetLastWin32Error();
-
-                        if (!continueFind && lastError == 234) // ERROR_MORE_DATA
-                        {
-                            linkName = new StringBuilder((int)linkStringLength);
-                            continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
-                        }
-
-                        if (!continueFind && lastError != 38) // ERROR_HANDLE_EOF. No more links.
-                        {
-                            throw new Win32Exception(lastError);
-                        }
-                    }
-                    while (continueFind);
-                }
-                finally
-                {
-                    InternalSymbolicLinkLinkCodeMethods.FindClose(fileHandle);
-                }
+                linkName = new StringBuilder((int)linkStringLength);
+                fileHandle = InternalSymbolicLinkLinkCodeMethods.FindFirstFileName(filePath, 0, ref linkStringLength, linkName);
+                lastError = Marshal.GetLastWin32Error();
             }
 
+            if (fileHandle == (IntPtr)(-1))
+            {
+                throw new Win32Exception(lastError);
+            }
+
+            bool continueFind = false;
+
+            try
+            {
+                do
+                {
+                    StringBuilder fullName = new StringBuilder();
+                    fullName.Append(Path.GetPathRoot(filePath));    // hard link source and target must be on the same drive. So we can use the source for find the path root.
+                    fullName.Append(linkName.ToString());
+                    FileInfo fInfo = new FileInfo(fullName.ToString());
+
+                    // Don't add the target link to the list.
+
+                    if (string.Compare(fInfo.FullName, filePath, StringComparison.OrdinalIgnoreCase) != 0)
+                        links.Add(fInfo.FullName);
+
+                    continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
+
+                    lastError = Marshal.GetLastWin32Error();
+
+                    if (!continueFind && lastError == 234) // ERROR_MORE_DATA
+                    {
+                        linkName = new StringBuilder((int)linkStringLength);
+                        continueFind = InternalSymbolicLinkLinkCodeMethods.FindNextFileName(fileHandle, ref linkStringLength, linkName);
+                    }
+
+                    if (!continueFind && lastError != 38) // ERROR_HANDLE_EOF. No more links.
+                    {
+                        throw new Win32Exception(lastError);
+                    }
+                }
+                while (continueFind);
+            }
+            finally
+            {
+                InternalSymbolicLinkLinkCodeMethods.FindClose(fileHandle);
+            }
+#endif
             return links;
         }
 

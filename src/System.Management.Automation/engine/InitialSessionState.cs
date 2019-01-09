@@ -2721,13 +2721,15 @@ namespace System.Management.Automation.Runspaces
                 // WinDir\System32\Microsoft\PowerShell\DriveRoots\[UserName]
                 string directoryName = MakeUserNamePath();
 
+                string userDrivePath = null;
+
                 if (!Platform.IsWindows)
                 {
-                    string userDrivePath = Path.Combine(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE), "DriveRoots", directoryName);
+                    userDrivePath = Path.Combine(Platform.SelectProductNameForDirectory(Platform.XDG_Type.CACHE), "DriveRoots", directoryName);
                 }
                 else
                 {
-                    string userDrivePath = Path.Combine(
+                    userDrivePath = Path.Combine(
                         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                         @"Microsoft\PowerShell\DriveRoots",
                         directoryName);

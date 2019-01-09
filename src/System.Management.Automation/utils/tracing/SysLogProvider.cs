@@ -92,7 +92,7 @@ namespace System.Management.Automation.Tracing
         /// <param name="level">The trace level to enable.</param>
         /// <param name="keywords">The keywords to enable.</param>
         /// <param name="channels">The output channels to enable.</param>
-        public SysLogProvider(string applicationId, PSLevel level, PSKeyword keywords, PSChannel channels)
+        public SysLogProvider(string applicationId, PSLevel level, PSKeyword keywords, byte channels)
         {
             if (Platform.IsWindows)
             {
@@ -189,7 +189,7 @@ namespace System.Management.Automation.Tracing
         // use flags that are not consistent with the event definition.
         // To ensure filtering of analytic events is consistent, both keyword and channel
         // filtering is performed to suppress analytic events.
-        private bool ShouldLog(PSLevel level, PSKeyword keywords, PSChannel channel)
+        private bool ShouldLog(PSLevel level, PSKeyword keywords, byte channel)
         {
             return ((_channelFilter & (ulong)channel) != 0 &&
                     IsEnabled(level, keywords));
@@ -332,7 +332,7 @@ namespace System.Management.Automation.Tracing
         /// <param name="level">The logging level.</param>
         /// <param name="keyword">The keyword(s) for the event.</param>
         /// <param name="args">The payload for the log message.</param>
-        public void Log(PSEventId eventId, PSChannel channel, PSTask task, PSOpcode opcode, PSLevel level, PSKeyword keyword, params object[] args)
+        public void Log(PSEventId eventId, byte channel, PSTask task, PSOpcode opcode, PSLevel level, PSKeyword keyword, params object[] args)
         {
             if (ShouldLog(level, keyword, channel))
             {

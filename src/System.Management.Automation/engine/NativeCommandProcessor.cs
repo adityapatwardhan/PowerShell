@@ -1325,7 +1325,6 @@ namespace System.Management.Automation
             }
 
             return false;
-#endif
         }
 
         #region Interop for FindExecutable...
