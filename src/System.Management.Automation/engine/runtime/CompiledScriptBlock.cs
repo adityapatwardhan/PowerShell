@@ -826,7 +826,7 @@ namespace System.Management.Automation
 
         internal Assembly AssemblyDefiningPSTypes { set; get; }
 
-        internal HelpInfo GetHelpInfo(ExecutionContext context, CommandInfo commandInfo, bool dontSearchOnRemoteComputer,
+        /* internal HelpInfo GetHelpInfo(ExecutionContext context, CommandInfo commandInfo, bool dontSearchOnRemoteComputer,
             Dictionary<Ast, Token[]> scriptBlockTokenCache, out string helpFile, out string helpUriFromDotLink)
         {
             helpUriFromDotLink = null;
@@ -840,7 +840,7 @@ namespace System.Management.Automation
 
             helpFile = null;
             return null;
-        }
+        } */
 
         /// <summary>
         /// Check the script block to see if it uses any language constructs not allowed in restricted language mode.

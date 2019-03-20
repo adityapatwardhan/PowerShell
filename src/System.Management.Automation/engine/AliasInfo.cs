@@ -81,10 +81,10 @@ namespace System.Management.Automation
 
         #endregion ctor
 
-        internal override HelpCategory HelpCategory
+/*         internal override HelpCategory HelpCategory
         {
             get { return HelpCategory.Alias; }
-        }
+        } */
 
         /// <summary>
         /// Gets the command information for the command that is immediately referenced by this alias.

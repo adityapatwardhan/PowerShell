@@ -816,7 +816,7 @@ namespace System.Management.Automation
             }
         }
 
-        /// <summary>
+        /* /// <summary>
         /// Checks if user has requested help (for example passing "-?" parameter for a cmdlet)
         /// and if yes, then returns the help target to display.
         /// </summary>
@@ -862,7 +862,7 @@ namespace System.Management.Automation
             }
 
             return base.IsHelpRequested(out helpTarget, out helpCategory);
-        }
+        } */
 
         #endregion helper_methods
     }

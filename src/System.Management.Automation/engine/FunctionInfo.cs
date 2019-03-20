@@ -158,11 +158,11 @@ namespace System.Management.Automation
 
         #endregion ctor
 
-        internal override HelpCategory HelpCategory
+/*         internal override HelpCategory HelpCategory
         {
             get { return HelpCategory.Function; }
         }
-
+ */
         /// <summary>
         /// Gets the ScriptBlock which is the implementation of the function.
         /// </summary>

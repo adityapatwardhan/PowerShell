@@ -272,9 +272,9 @@ namespace System.Management.Automation
 
         private ReadOnlyCollection<WorkflowInfo> _workflowsCalled;
 
-        internal override HelpCategory HelpCategory
+/*         internal override HelpCategory HelpCategory
         {
             get { return HelpCategory.Workflow; }
-        }
+        } */
     }
 }

@@ -158,11 +158,11 @@ namespace System.Management.Automation
 
         #endregion ctor
 
-        internal override HelpCategory HelpCategory
+/*         internal override HelpCategory HelpCategory
         {
             get { return HelpCategory.Configuration; }
         }
-
+ */
         /// <summary>
         /// Indication whether the configuration is a meta-configuration.
         /// </summary>

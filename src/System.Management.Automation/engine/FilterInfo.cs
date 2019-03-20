@@ -132,9 +132,9 @@ namespace System.Management.Automation
 
         #endregion ctor
 
-        internal override HelpCategory HelpCategory
+/*         internal override HelpCategory HelpCategory
         {
             get { return HelpCategory.Filter; }
-        }
+        } */
     }
 }

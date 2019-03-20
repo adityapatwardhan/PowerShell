@@ -505,7 +505,7 @@ namespace Microsoft.PowerShell.Commands
                 // a remote endpoint. In the worst case, this will affect get-help to run a little longer
                 // after get-command is run..but that should be OK because get-help is used mainly for
                 // document reading purposes and not in production.
-                Context.HelpSystem.ResetHelpProviders();
+                // Context.HelpSystem.ResetHelpProviders();
             }
         }
 

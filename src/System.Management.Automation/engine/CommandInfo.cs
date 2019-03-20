@@ -254,10 +254,11 @@ namespace System.Management.Automation
         /// </summary>
         internal PSLanguageMode? DefiningLanguageMode { get; set; }
 
-        internal virtual HelpCategory HelpCategory
+        /* internal virtual HelpCategory HelpCategory
         {
             get { return HelpCategory.None; }
         }
+        */
 
         internal CommandInfo CopiedCommand { get; set; }
 

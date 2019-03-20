@@ -247,7 +247,7 @@ namespace System.Management.Automation
 
         #region handling of -? parameter
 
-        /// <summary>
+        /* /// <summary>
         /// Checks if user has requested help (for example passing "-?" parameter for a cmdlet)
         /// and if yes, then returns the help target to display.
         /// </summary>
@@ -287,17 +287,17 @@ namespace System.Management.Automation
 
             CommandProcessorBase helpCommandProcessor = context.CreateCommand("get-help", false);
             var cpi = CommandParameterInternal.CreateParameterWithArgument(
-                /*parameterAst*/null, "Name", "-Name:",
-                /*argumentAst*/null, helpTarget,
+                parameterAst:null, "Name", "-Name:",
+                argumentAst:null, helpTarget,
                 false);
             helpCommandProcessor.AddParameter(cpi);
             cpi = CommandParameterInternal.CreateParameterWithArgument(
-                /*parameterAst*/null, "Category", "-Category:",
-                /*argumentAst*/null, helpCategory.ToString(),
+                parameterAst:null, "Category", "-Category:",
+                argumentAst:null, helpCategory.ToString(),
                 false);
             helpCommandProcessor.AddParameter(cpi);
             return helpCommandProcessor;
-        }
+        } */
 
         #endregion
 

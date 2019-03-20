@@ -208,11 +208,11 @@ namespace System.Management.Automation
 
         private string _helpFilePath = string.Empty;
 
-        internal override HelpCategory HelpCategory
+/*         internal override HelpCategory HelpCategory
         {
             get { return HelpCategory.Cmdlet; }
         }
-
+ */
         /// <summary>
         /// Gets the Snap-in in which the cmdlet is implemented.
         /// </summary>
