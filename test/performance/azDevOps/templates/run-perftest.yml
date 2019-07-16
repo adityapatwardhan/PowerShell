@@ -1,0 +1,55 @@
+parameters:
+  imageName: 'vs2017-win2016'
+  jobName: 'perf_test'
+  displayName: 'Performance Test'
+
+jobs:
+- job: ${{ parameters.jobName }}
+  pool:
+    imageName: ${{ parameters.imageName }}
+  displayName: ${{ parameters.displayName }}
+  condition: eq(variables['EnablePSPerfRun'], 'true')
+
+  steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download build artifacts'
+    inputs:
+      downloadType: specific
+      itemPattern: |
+        build/**/*
+      downloadPath: '$(System.ArtifactsDirectory)'
+
+  - pwsh: |
+      git clone https://github.com/adityapatwardhan/PSSnowball
+    displayName: Git clone PSSnowball
+
+  - pwsh: |
+
+      Import-Module .\tools\ci.psm1
+      Restore-PSOptions -PSOptionsPath '$(System.ArtifactsDirectory)\build\psoptions.json'
+      $options = (Get-PSOptions)
+      $PwshPath = $options.Output
+
+      Import-Module PSSnowball/PSSnowball -force
+      $results = @()
+
+      # Start run
+      Start-PSSnowballRun -Verbose -InstrumentationKey '$(PerfAppInsightsKey)' -PwshPath $PwshPath
+
+      # Get-Help test
+      $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { Get-Help DoesNotExist } -Verbose
+
+      # Get-Command test
+      $results += Invoke-PSSnowballTest -TestName "GetCommand" -ScriptBlock { Get-Command } -Verbose
+
+      # Get-Module ListAvailable test
+      try {
+        $originalPSModulePath = $env:PSModulePath
+        $results += Invoke-PSSnowballTest -TestName "GetModuleListAvailable" -ScriptBlock { Get-Module -ListAvailable } -Verbose
+      }
+      finally {
+        $env:PSModulePath = $originalPSModulePath
+      }
+
+      # Stop run
+      Stop-PSSnowballRun
