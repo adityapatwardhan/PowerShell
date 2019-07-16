@@ -95,3 +95,9 @@ jobs:
       Import-Module .\tools\ci.psm1
       New-CodeCoverageAndTestPackage
     displayName: CodeCoverage and Test Package
+
+- template: templates/perftest.yml
+  parameters:
+    imageName: 'ubuntu-16.04'
+    jobName: 'linuxPerf'
+    displayName: 'Performance Test Ubuntu 16.04'

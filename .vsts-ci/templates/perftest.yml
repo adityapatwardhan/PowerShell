@@ -8,6 +8,7 @@ jobs:
   pool:
     imageName: ${{ parameters.imageName }}
   displayName: ${{ parameters.displayName }}
+  condition: eq(variables['EnablePSPerfRun'], 'true')
 
   steps:
   - task: DownloadBuildArtifacts@0
