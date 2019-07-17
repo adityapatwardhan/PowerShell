@@ -11,13 +11,10 @@ jobs:
   condition: eq(variables['EnablePSPerfRun'], 'true')
 
   steps:
-  - task: DownloadBuildArtifacts@0
-    displayName: 'Download build artifacts'
-    inputs:
-      downloadType: specific
-      itemPattern: |
-        build/**/*
-      downloadPath: '$(System.ArtifactsDirectory)'
+  - pwsh: |
+      Invok
+    displayName: Download latest master build
+
 
   - pwsh: |
       git clone https://github.com/adityapatwardhan/PSSnowball
