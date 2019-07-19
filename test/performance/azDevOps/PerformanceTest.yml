@@ -1,3 +1,7 @@
+schedules:
+  - cron: "0 */3 * * *"
+    displayName: Every 3 hours
+
 stages:
 - stage: WinPerfTest
   displayName: Performance tests
