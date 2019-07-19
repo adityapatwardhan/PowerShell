@@ -34,7 +34,7 @@ jobs:
       $results = @()
 
       # Start run
-      Start-PSSnowballRun -Verbose -InstrumentationKey '$(PerfAppInsightsKey)' -PwshPath $(PwshPath)
+      Start-PSSnowballRun -Verbose -InstrumentationKey '$(PerfAppInsightsKey)' -PwshPath '$(PwshPath)'
 
       # Get-Help test
       $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { Get-Help DoesNotExist } -Verbose

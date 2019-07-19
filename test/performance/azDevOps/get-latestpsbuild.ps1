@@ -35,7 +35,7 @@ function Receive-BuildPackage {
     }
 
     Write-Verbose -Verbose "Waiting for downloading build artifacts with timeout of 1200 seconds."
-    Wait-Job $productDownload -Timeout 1200
+    Wait-Job $productDownload -Timeout 1200 | Out-null
 
     if ($productDownload.State -ne 'Completed') {
         Write-Log Error "Downloading build artifacts timed out."
