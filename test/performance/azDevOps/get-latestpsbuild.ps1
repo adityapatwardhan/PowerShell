@@ -41,31 +41,44 @@ function Receive-BuildPackage {
     Write-Verbose -Verbose "End: Receive-BuildPackage"
 }
 
-function Get-PSExecutablePath
-{
+function Get-PSExecutablePath {
     param(
         [Parameter(Mandatory)] [string] $ZipPath,
         [Parameter(Mandatory)] [string] $Destination
     )
 
     Write-Verbose -Verbose "Expanding $ZipPath"
+
     Expand-Archive -Path $ZipPath -DestinationPath $Destination -Force
 
-    $zipArtifact = Resolve-Path (Join-Path $Destination "finalResults" -AdditionalChildPath "powershell-*-win-x64.zip")
+    $packageName = if ($IsWindows) {
+        "powershell-*-win-x64.zip"
+    } elseif ($IsLinux) {
+        "powershell-*-linux-x64.tar.gz"
+    } else {
+        "powershell-*-osx-x64.tar.gz"
+    }
+
+    $zipArtifact = Resolve-Path (Join-Path $Destination "finalResults" -AdditionalChildPath $packageName)
 
     $pwshFolder = Join-Path $Destination "ps"
 
     $execName = if ($IsWindows) {
         "pwsh.exe"
-        }
-        else {
-            "pwsh"
-        }
+    } else {
+        "pwsh"
+    }
 
     $pwshPath = Join-Path $pwshFolder $execName
 
     Write-Verbose -Verbose "Expanding $zipArtifact to $pwshFolder"
-    Expand-Archive -Path $zipArtifact -DestinationPath "$pwshFolder" -Force
+
+    if ($IsWindows) {
+        Expand-Archive -Path $zipArtifact -DestinationPath "$pwshFolder" -Force
+    }
+    else {
+        tar -xvf $zipArtifact -C $pwshFolder
+    }
 
     if (Test-Path $pwshPath) {
         return $pwshPath
