@@ -12,7 +12,7 @@ jobs:
   steps:
 
   - pwsh: |
-      git clone https://github.com/adityapatwardhan/PSSnowball
+      git clone https://github.com/adityapatwardhan/PSSnowball "$(Build.SourcesDirectory)/PSSnowball"
     displayName: Git clone PSSnowball
 
   - pwsh: |
@@ -30,7 +30,7 @@ jobs:
 
   - pwsh: |
 
-      Import-Module PSSnowball/PSSnowball -force
+      Import-Module "$(Build.SourcesDirectory)/PSSnowball/PSSnowball" -force
       $results = @()
 
       # Start run
