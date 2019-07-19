@@ -1,9 +1,10 @@
 schedules:
-  - cron: "10 */3 * * *"
+  - cron: "15 */3 * * *"
     displayName: Every 3 hours
     branches:
       include:
       - AppInsightsPerf
+    always: true
 
 stages:
 - stage: WinPerfTest
