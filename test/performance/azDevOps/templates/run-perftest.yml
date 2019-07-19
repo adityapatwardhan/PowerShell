@@ -10,10 +10,6 @@ jobs:
   displayName: ${{ parameters.displayName }}
 
   steps:
-  - pwsh: |
-      Invok
-    displayName: Download latest master build
-
 
   - pwsh: |
       git clone https://github.com/adityapatwardhan/PSSnowball
