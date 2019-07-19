@@ -29,7 +29,6 @@ jobs:
     displayName: Install PowerShell build
 
   - pwsh: |
-
       Import-Module "$(Build.SourcesDirectory)/PSSnowball/PSSnowball" -force
       $results = @()
 
@@ -53,3 +52,4 @@ jobs:
 
       # Stop run
       Stop-PSSnowballRun
+    displayName: Execute Tests

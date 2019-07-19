@@ -83,7 +83,7 @@ function Get-PSExecutablePath {
     if ($IsWindows) {
         Expand-Archive -Path $psPackage -DestinationPath "$pwshFolder" -Force
     } else {
-        tar -xvf $psPackage -C $pwshFolder
+        tar -xf $psPackage -C $pwshFolder
     }
 
     if (Test-Path $pwshPath) {
