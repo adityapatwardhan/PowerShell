@@ -1,14 +1,14 @@
 param(
     [Parameter(Mandatory)] [string] $Destination,
     [Parameter(Mandatory)] [string] $Token,
-    [Parameter(Mandatory)] [string] $BuildId
+    [Parameter()] [string] $BuildId
 )
 
 function Receive-BuildPackage {
     param(
         [Parameter(Mandatory)] [string] $Path,
         [Parameter(Mandatory)] [string] $Token,
-        [Parameter(Mandatory)] [string] $BuildId
+        [Parameter()] [string] $BuildId
     )
 
     Write-Verbose -Verbose "Start: Receive-BuildPackage"
