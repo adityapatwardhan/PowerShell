@@ -14,8 +14,8 @@ stages:
   - template: templates/run-perftest.yml
     parameters:
       imageName: 'ubuntu-16.04'
-    jobName: 'linuxPerf'
-    displayName: 'Performance Test Ubuntu 16.04'
+      jobName: 'linuxPerf'
+      displayName: 'Performance Test Ubuntu 16.04'
 
 - stage: MacOSPerfTest
   displayName: Performance tests
