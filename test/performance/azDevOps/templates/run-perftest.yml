@@ -16,7 +16,11 @@ jobs:
     displayName: Git clone PSSnowball
 
   - pwsh: |
-      $pwshPath = test/performance/azDevOps/get-latestpsbuild.ps1 -Destination $(Build.ArtifactStagingDirectory) -Token $(BuildAccessToken) -BuildId $(PSBuildId)
+      $pwshPath = if ($PSBuildId) {
+          test/performance/azDevOps/get-latestpsbuild.ps1 -Destination $(Build.ArtifactStagingDirectory) -Token $(BuildAccessToken) -BuildId $(PSBuildId)
+      } else {
+          test/performance/azDevOps/get-latestpsbuild.ps1 -Destination $(Build.ArtifactStagingDirectory) -Token $(BuildAccessToken)
+      }
 
       $vstsCommandString = "vso[task.setvariable variable=PwshPath]$pwshPath"
       Write-Host "sending " + $vstsCommandString
