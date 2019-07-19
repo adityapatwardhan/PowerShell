@@ -68,6 +68,8 @@ function Get-PSExecutablePath {
 
     $pwshFolder = Join-Path $Destination "ps"
 
+    $null = New-Item -ItemType Directory $pwshFolder
+
     $execName = if ($IsWindows) {
         "pwsh.exe"
     } else {
