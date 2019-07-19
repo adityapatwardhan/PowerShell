@@ -21,17 +21,21 @@ jobs:
     displayName: Git clone PSSnowball
 
   - pwsh: |
+      $pwshPath = test/performance/azDevOps/get-latestpsbuild.ps1 -Destination $(Build.ArtifactStagingDirectory) -Token $(BuildAccessToken)
 
-      Import-Module .\tools\ci.psm1
-      Restore-PSOptions -PSOptionsPath '$(System.ArtifactsDirectory)\build\psoptions.json'
-      $options = (Get-PSOptions)
-      $PwshPath = $options.Output
+      $vstsCommandString = "vso[task.setvariable variable=PwshPath]$pwshPath"
+      Write-Host "sending " + $vstsCommandString
+      Write-Host "##$vstsCommandString"
+
+    displayName: Install latest PowerShell build
+
+  - pwsh: |
 
       Import-Module PSSnowball/PSSnowball -force
       $results = @()
 
       # Start run
-      Start-PSSnowballRun -Verbose -InstrumentationKey '$(PerfAppInsightsKey)' -PwshPath $PwshPath
+      Start-PSSnowballRun -Verbose -InstrumentationKey '$(PerfAppInsightsKey)' -PwshPath $(PwshPath)
 
       # Get-Help test
       $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { Get-Help DoesNotExist } -Verbose
