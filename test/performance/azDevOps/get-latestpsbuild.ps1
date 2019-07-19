@@ -56,7 +56,15 @@ function Get-PSExecutablePath {
     Write-Verbose -Verbose "Expanding $ZipPath"
     Expand-Archive -Path $ZipPath -DestinationPath $Destination -Force -Verbose
 
-    $zipArtifact = Resolve-Path (Join-Path $Destination "finalResults" -AdditionalChildPath "powershell-*-win-x64.zip")
+    $psPackageFilter = if ($IsWindows) {
+        "powershell-*-win-x64.zip"
+    } elseif ($IsLinux) {
+        "powershell-*-linux-x64.tar.gz"
+    } else {
+        "powershell-*-osx-x64.tar.gz"
+    }
+
+    $psPackage = Resolve-Path (Join-Path $Destination "finalResults" -AdditionalChildPath $psPackageFilter)
 
     $pwshFolder = Join-Path $Destination "ps"
 
@@ -68,12 +76,12 @@ function Get-PSExecutablePath {
 
     $pwshPath = Join-Path $pwshFolder $execName
 
-    Write-Verbose -Verbose "Expanding $zipArtifact to $pwshFolder"
+    Write-Verbose -Verbose "Expanding $psPackage to $pwshFolder"
 
     if ($IsWindows) {
-        Expand-Archive -Path $zipArtifact -DestinationPath "$pwshFolder" -Force
+        Expand-Archive -Path $psPackage -DestinationPath "$pwshFolder" -Force
     } else {
-        tar -xvf $zipArtifact -C $pwshFolder
+        tar -xvf $psPackage -C $pwshFolder
     }
 
     if (Test-Path $pwshPath) {
