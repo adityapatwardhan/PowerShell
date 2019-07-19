@@ -1,23 +1,29 @@
 param(
     [Parameter(Mandatory)] [string] $Destination,
-    [Parameter(Mandatory)] [string] $Token
+    [Parameter(Mandatory)] [string] $Token,
+    [Parameter(Mandatory)] [string] $BuildId
 )
 
 function Receive-BuildPackage {
     param(
         [Parameter(Mandatory)] [string] $Path,
-        [Parameter(Mandatory)] [string] $Token
+        [Parameter(Mandatory)] [string] $Token,
+        [Parameter(Mandatory)] [string] $BuildId
     )
 
     Write-Verbose -Verbose "Start: Receive-BuildPackage"
 
-    $base64Token = [Convert]::ToBase64String([System.Text.ASCIIEncoding]::ASCII.GetBytes(("{0}:{1}" -f [string]::Empty, $token)))
-    $authValue = "Basic", $base64Token -join " "
-    $header = @{ "Authorization" = $authValue }
+    $buildToInstall = if ($BuildId) {
+        $BuildId
+    } else {
+        $base64Token = [Convert]::ToBase64String([System.Text.ASCIIEncoding]::ASCII.GetBytes(("{0}:{1}" -f [string]::Empty, $token)))
+        $authValue = "Basic", $base64Token -join " "
+        $header = @{ "Authorization" = $authValue }
 
-    $latestBuildId = (Invoke-RestMethod 'https://dev.azure.com/mscodehub/powershellcore/_apis/build/builds?definitions=696&queryOrder=finishTimeDescending&$top=1' -Headers $header).Value.Id
+        (Invoke-RestMethod 'https://dev.azure.com/mscodehub/powershellcore/_apis/build/builds?definitions=696&queryOrder=finishTimeDescending&$top=1' -Headers $header).Value.Id
+    }
 
-    $productArtifactUrl = "https://dev.azure.com/mscodehub/powershellcore/_apis/build/builds/$latestBuildId/artifacts?artifactName=finalResults"
+    $productArtifactUrl = "https://dev.azure.com/mscodehub/powershellcore/_apis/build/builds/$buildToInstall/artifacts?artifactName=finalResults"
 
     $productArtifactDownloadUrl = (Invoke-RestMethod $productArtifactUrl -Headers $header -PreserveAuthorizationOnRedirect).Resource.downloadUrl
     Write-Verbose -Verbose "productArtifactDownloadUrl : $productArtifactDownloadUrl to $path"
@@ -48,18 +54,9 @@ function Get-PSExecutablePath {
     )
 
     Write-Verbose -Verbose "Expanding $ZipPath"
-
     Expand-Archive -Path $ZipPath -DestinationPath $Destination -Force
 
-    $packageName = if ($IsWindows) {
-        "powershell-*-win-x64.zip"
-    } elseif ($IsLinux) {
-        "powershell-*-linux-x64.tar.gz"
-    } else {
-        "powershell-*-osx-x64.tar.gz"
-    }
-
-    $zipArtifact = Resolve-Path (Join-Path $Destination "finalResults" -AdditionalChildPath $packageName)
+    $zipArtifact = Resolve-Path (Join-Path $Destination "finalResults" -AdditionalChildPath "powershell-*-win-x64.zip")
 
     $pwshFolder = Join-Path $Destination "ps"
 
@@ -75,8 +72,7 @@ function Get-PSExecutablePath {
 
     if ($IsWindows) {
         Expand-Archive -Path $zipArtifact -DestinationPath "$pwshFolder" -Force
-    }
-    else {
+    } else {
         tar -xvf $zipArtifact -C $pwshFolder
     }
 
@@ -87,6 +83,8 @@ function Get-PSExecutablePath {
     }
 }
 
+## Script main
+
 $topLevelZipPath = Join-Path $Destination "product.zip"
-Receive-BuildPackage -Path $topLevelZipPath -Token $Token
+Receive-BuildPackage -Path $topLevelZipPath -Token $Token -BuildId $BuildId
 Get-PSExecutablePath -ZipPath $topLevelZipPath -Destination $Destination

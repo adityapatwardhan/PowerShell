@@ -20,13 +20,13 @@ jobs:
     displayName: Git clone PSSnowball
 
   - pwsh: |
-      $pwshPath = test/performance/azDevOps/get-latestpsbuild.ps1 -Destination $(Build.ArtifactStagingDirectory) -Token $(BuildAccessToken)
+      $pwshPath = test/performance/azDevOps/get-latestpsbuild.ps1 -Destination $(Build.ArtifactStagingDirectory) -Token $(BuildAccessToken) -BuildId $(PSBuildId)
 
       $vstsCommandString = "vso[task.setvariable variable=PwshPath]$pwshPath"
       Write-Host "sending " + $vstsCommandString
       Write-Host "##$vstsCommandString"
 
-    displayName: Install latest PowerShell build
+    displayName: Install PowerShell build
 
   - pwsh: |
 
