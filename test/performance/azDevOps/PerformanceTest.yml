@@ -1,6 +1,8 @@
 schedules:
-  - cron: "0 */3 * * *"
+  - cron: "5 */3 * * *"
     displayName: Every 3 hours
+    branches:
+      include: master
 
 stages:
 - stage: WinPerfTest
