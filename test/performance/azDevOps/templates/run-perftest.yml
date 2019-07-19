@@ -37,7 +37,7 @@ jobs:
       Start-PSSnowballRun -Verbose -InstrumentationKey '$(PerfAppInsightsKey)' -PwshPath '$(PwshPath)'
 
       # Get-Help test
-      $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { Get-Help DoesNotExist } -Verbose
+      $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { Get-Help DoesNotExist -ErrorAction SilentlyContinue} -Verbose
 
       # Get-Command test
       $results += Invoke-PSSnowballTest -TestName "GetCommand" -ScriptBlock { Get-Command } -Verbose
