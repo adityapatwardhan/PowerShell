@@ -1,12 +1,12 @@
 parameters:
   imageName: 'vs2017-win2016'
   jobName: 'perf_test'
-  displayName: 'Performance Test'
+  displayName: 'Windows Server 2016'
 
 jobs:
 - job: ${{ parameters.jobName }}
   pool:
-    imageName: ${{ parameters.imageName }}
+    vmImage: ${{ parameters.imageName }}
   displayName: ${{ parameters.displayName }}
 
   steps:

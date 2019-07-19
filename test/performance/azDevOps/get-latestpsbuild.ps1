@@ -54,7 +54,7 @@ function Get-PSExecutablePath {
     )
 
     Write-Verbose -Verbose "Expanding $ZipPath"
-    Expand-Archive -Path $ZipPath -DestinationPath $Destination -Force
+    Expand-Archive -Path $ZipPath -DestinationPath $Destination -Force -Verbose
 
     $zipArtifact = Resolve-Path (Join-Path $Destination "finalResults" -AdditionalChildPath "powershell-*-win-x64.zip")
 
