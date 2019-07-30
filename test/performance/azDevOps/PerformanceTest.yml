@@ -1,6 +1,6 @@
 schedules:
-  - cron: "15 */3 * * *"
-    displayName: Every 3 hours
+  - cron: "0 */1 * * *"
+    displayName: Every 1 hours
     branches:
       include:
       - AppInsightsPerf

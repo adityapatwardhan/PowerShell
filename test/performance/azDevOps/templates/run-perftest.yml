@@ -35,6 +35,9 @@ jobs:
       # Start run
       Start-PSSnowballRun -Verbose -InstrumentationKey '$(PerfAppInsightsKey)' -PwshPath '$(PwshPath)'
 
+      # Make sure powershell analysis cache is setup
+      Invoke-PSSnowballRunInitScript -ScriptBlock { Get-Module -ListAvailable } | Out-Null
+
       # Get-Help test
       $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { $ProgressPreference = 'silentlycontinue'; Get-Help DoesNotExist -ErrorAction SilentlyContinue} -Verbose
 
