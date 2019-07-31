@@ -1,6 +1,6 @@
 schedules:
-  - cron: "0 */1 * * *"
-    displayName: Every 1 hours
+  - cron: "0 15 * * 1-5"
+    displayName: Every weekday at 15:00
     branches:
       include:
       - AppInsightsPerf
