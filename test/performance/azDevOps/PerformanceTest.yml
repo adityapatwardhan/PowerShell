@@ -13,7 +13,7 @@ stages:
   jobs:
   - template: templates/run-perftest.yml
     parameters:
-      imageName: 'vs2017-win2016'
+      agentOS: 'Windows_NT'
       jobName: 'winPerf'
       displayName: 'Windows Server 2016'
 
@@ -23,7 +23,7 @@ stages:
   jobs:
   - template: templates/run-perftest.yml
     parameters:
-      imageName: 'ubuntu-16.04'
+      agentOS: 'Linux'
       jobName: 'linuxPerf'
       displayName: 'Ubuntu 16.04'
 
@@ -33,6 +33,6 @@ stages:
   jobs:
   - template: templates/run-perftest.yml
     parameters:
-      imageName: 'macOS-10.14'
+      agentOS: 'Darwin'
       jobName: 'macOSPerf'
       displayName: 'macOS 10.14'

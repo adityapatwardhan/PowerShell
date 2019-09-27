@@ -1,12 +1,14 @@
 parameters:
-  imageName: 'vs2017-win2016'
+  agentOS: 'Darwin|Linux|Windows_NT'
   jobName: 'perf_test'
   displayName: 'Windows Server 2016'
 
 jobs:
 - job: ${{ parameters.jobName }}
   pool:
-    vmImage: ${{ parameters.imageName }}
+    name: PS-Performance
+    demands:
+    - agent.os -equals ${{ parameters.agentOS }}
   displayName: ${{ parameters.displayName }}
 
   steps:
