@@ -41,19 +41,13 @@ jobs:
       Invoke-PSSnowballRunInitScript -ScriptBlock { Get-Module -ListAvailable } | Out-Null
 
       # Get-Help test
-      $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { $ProgressPreference = 'silentlycontinue'; Get-Help DoesNotExist -ErrorAction SilentlyContinue} -Verbose
+      $results += Invoke-PSSnowballTest -TestName "GetHelpNonExistent" -ScriptBlock { Get-Help DoesNotExist -ErrorAction SilentlyContinue} -Setup { $ProgressPreference = 'silentlycontinue'; $originalPath = $env:PSModulePath; $env:PSModulePath = (Join-Path $PSHOME "Modules")} -TearDown { $env:PSModulePath = $originalPath } -Verbose
 
       # Get-Command test
-      $results += Invoke-PSSnowballTest -TestName "GetCommand" -ScriptBlock { Get-Command } -Verbose
+      $results += Invoke-PSSnowballTest -TestName "GetCommand" -ScriptBlock { Get-Command } -Setup { $originalPath = $env:PSModulePath; $env:PSModulePath = (Join-Path $PSHOME "Modules")} -TearDown { $env:PSModulePath = $originalPath } -Verbose
 
       # Get-Module ListAvailable test
-      try {
-        $originalPSModulePath = $env:PSModulePath
-        $results += Invoke-PSSnowballTest -TestName "GetModuleListAvailable" -ScriptBlock { Get-Module -ListAvailable } -Verbose
-      }
-      finally {
-        $env:PSModulePath = $originalPSModulePath
-      }
+      $results += Invoke-PSSnowballTest -TestName "GetModuleListAvailable" -ScriptBlock { Get-Module -ListAvailable } -Setup { $originalPath = $env:PSModulePath; $env:PSModulePath = (Join-Path $PSHOME "Modules")} -TearDown { $env:PSModulePath = $originalPath } -Verbose
 
       # Stop run
       Stop-PSSnowballRun
