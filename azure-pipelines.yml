@@ -12,6 +12,9 @@ pool:
 steps:
 - pwsh: Get-ChildItem 'Env:'
   displayName: Capture environment
+
+- pwsh: Get-Content /etc/os-release
+  displayName: Display OS info
   
 - pwsh: | 
     Import-Module '$(Build.SourcesDirectory)/build.psm1' -Force
