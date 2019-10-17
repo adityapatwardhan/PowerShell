@@ -7,7 +7,9 @@ trigger:
 - master
 
 pool:
-  container: 'mcr.microsoft.com/powershell/test-deps:preview-alpine-3.8'
+  vmImage: 'ubuntu-16.04'
+
+container: 'mcr.microsoft.com/powershell/test-deps:preview-alpine-3.8'
 
 steps:
 - pwsh: Get-ChildItem 'Env:'
