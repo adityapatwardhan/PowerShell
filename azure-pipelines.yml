@@ -9,7 +9,7 @@ trigger:
 pool:
   vmImage: 'ubuntu-16.04'
 
-container: 'mcr.microsoft.com/powershell/test-deps:preview-alpine-3.8'
+container: 'arpatwar/testalpinegclib'
 
 steps:
 - pwsh: Get-ChildItem 'Env:'
@@ -24,3 +24,4 @@ steps:
     Start-PSBuild
     Start-PSPester
   displayName: 'Run a one-line script'
+  
