@@ -10,5 +10,9 @@ pool:
   container: 'mcr.microsoft.com/powershell/test-deps:preview-alpine-3.8'
 
 steps:
-- pwsh: Get-Module -ListAvailable
+- pwsh: | 
+    Import-Module '$(Build.SourcesDirectory)/build.psm1' -Force
+    Start-PSBootstrap
+    Start-PSBuild
+    Start-PSPester
   displayName: 'Run a one-line script'
