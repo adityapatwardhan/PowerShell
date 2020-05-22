@@ -3098,8 +3098,11 @@
       <Component Id="cmpDBF82E0B595545C691EFDEA6D0A55EC2" Guid="{04a2d230-ce2e-4957-bc6d-e7794b88fae3}">
         <File Id="filCE6DF8BB560F4785A4111E43CD9C14D7" KeyPath="yes" Source="$(env.ProductSourcePath)\api-ms-win-core-console-l1-2-0.dll" />
       </Component>
-      <Component Id="cmp09D3F0FF826A4CBEB4480AD2EC9720AC" Guid="{af62d3ce-a587-4e20-ac32-2ba264c171be}">
-        <File Id="filE2CC950CA4B8492D860AD430BFD08E83" KeyPath="yes" Source="$(env.ProductSourcePath)\mscordaccore_$(var.FileArchitecture)_$(var.FileArchitecture)_5.0.20.25106.dll" />
+      <Component Id="cmp4E59027B503E46E482DD60B2C5450534" Guid="{bb0667f1-4707-4571-b620-06b54b87ca26}">
+        <File Id="fil0BAA1AC7028844028068E6262C1457E6" KeyPath="yes" Source="$(env.ProductSourcePath)\mscordaccore_$(var.FileArchitecture)_$(var.FileArchitecture)_5.0.20.26811.dll" />
+      </Component>
+      <Component Id="cmp2A24885973004822992C0068356D34AC" Guid="{e37d1199-e0d8-4b88-9f42-95448397e798}">
+        <File Id="fil05855945B0944A20B273A4369AC644F0" KeyPath="yes" Source="$(env.ProductSourcePath)\createdump.exe" />
       </Component>
     </DirectoryRef>
   </Fragment>
@@ -4099,7 +4102,8 @@
       <ComponentRef Id="cmpD5CAB799D1E7463A92559D3D8E71172C" />
       <ComponentRef Id="cmp10A3BA8FB6304CDE98FA8E6D57223EEF" />
       <ComponentRef Id="cmpA57645B04E5F4D66AC598512C95AA1B9" />
-      <ComponentRef Id="cmp09D3F0FF826A4CBEB4480AD2EC9720AC" />
+      <ComponentRef Id="cmp4E59027B503E46E482DD60B2C5450534" />
+      <ComponentRef Id="cmp2A24885973004822992C0068356D34AC" />
     </ComponentGroup>
   </Fragment>
 </Wix>
