@@ -209,14 +209,14 @@ if ($dotnetUpdate.ShouldUpdate) {
             Write-Verbose -Message "Register new package source 'dotnet5'" -verbose
         }
 
-        if ($addDotnet5InternalSource -and $InteractiveAuth) {
+       <# if ($addDotnet5InternalSource -and $InteractiveAuth) {
             # This NuGet feed is for internal to Microsoft use only.
             $dotnet5InternalFeed = 'https://pkgs.dev.azure.com/dnceng/internal/_packaging/dotnet5-internal/nuget/v3/index.json'
             $updatedNugetFile = (Get-Content .\nuget.config -Raw) -replace "</packageSources>", "  <add key=`"dotnet5-internal`" value=`"$dotnet5InternalFeed`" />`r`n  </packageSources>"
             $updatedNugetFile | Out-File .\nuget.config -Force
             Register-PackageSource -Name 'dotnet5-internal' -Location $dotnet5InternalFeed -ProviderName NuGet
             Write-Verbose -Message "Register new package source 'dotnet5-internal'" -verbose
-        }
+        }#>
     }
 
     ## Install latest version from the channel
