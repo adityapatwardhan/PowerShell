@@ -57,8 +57,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <!--TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">'D:\PSGit\PowerShell\src\powershell-win-core\obj\project.assets.json5</TargetFrameworkVersion>
-    <TargetFrameworkIdentifier Condition="'$(TargetFrameworkIdentifier)' == ''">.NETFramework</TargetFrameworkIdentifier-->
     <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
     <TargetPlatformVersion>7.0</TargetPlatformVersion>
   </PropertyGroup>
