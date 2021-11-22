@@ -136,7 +136,16 @@ Describe 'Get-Error tests' -Tag CI {
         try {
             $originalRendering = $PSStyle.OutputRendering
             $PSStyle.OutputRendering = 'Ansi'
-            $out = pwsh -noprofile -command '$PSStyle.OutputRendering = "ANSI"; [System.Management.Automation.Internal.InternalTestHooks]::SetTestHook("BypassOutputRedirectionCheck", $true); try { 1/0 } catch { }; Get-Error' | Out-String
+
+            # If the PSNativeCommandArgumentPassing experimental feature is not enabled we need "" for BypassOutputRedirectionCheck
+            $command = if ((Get-ExperimentalFeature -Name 'PSNativeCommandArgumentPassing').Enabled) {
+                '$PSStyle.OutputRendering = "ANSI"; [System.Management.Automation.Internal.InternalTestHooks]::SetTestHook("BypassOutputRedirectionCheck", $true); try { 1/0 } catch { }; Get-Error'
+            }
+            else {
+                '$PSStyle.OutputRendering = "ANSI"; [System.Management.Automation.Internal.InternalTestHooks]::SetTestHook(""BypassOutputRedirectionCheck"", $true); try { 1/0 } catch { }; Get-Error'
+            }
+
+            $out = pwsh -noprofile -command $command | Out-String
 
             # need to escape the open square bracket so the regex works
             $resetColor = $PSStyle.Reset.Replace('[','\[')
