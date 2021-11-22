@@ -50,7 +50,11 @@ Describe "Native streams behavior with PowerShell" -Tags 'CI' {
         }
 
         It 'preserves error stream as is with Out-String' {
-            ($out | Out-String).Replace("`r", '') | Should -BeExactly "foo`n`nbar`n`nbazmiddlefoo`n`nbar`n`nbaz`n"
+            if ((Get-ExperimentalFeature -Name 'PSNativeCommandArgumentPassing').Enabled) {
+                ($out | Out-String).Replace("`r", '') | Should -BeExactly "foo`n`nbar`n`nbazmiddlefoo`n`nbar`n`nbaz`n"
+            } else {
+                Set-ItResult -Skipped -Because 'PSNativeCommandArgumentPassing experimental feature is disabled, so skipping.'
+            }
         }
 
         It 'does not get truncated or split when redirected' {
