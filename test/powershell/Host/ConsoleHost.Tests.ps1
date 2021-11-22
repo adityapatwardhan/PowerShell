@@ -249,6 +249,11 @@ Describe "ConsoleHost unit tests" -tags "Feature" {
         }
 
         It "Empty space command should succeed on non-Windows" -skip:$IsWindows {
+            if (-not (Get-ExperimentalFeature -Name 'PSNativeCommandArgumentPassing').Enabled) {
+                Set-ItResult -Skipped -Because 'PSNativeCommandArgumentPassing experimental feature is disabled. Skipping test.'
+                return
+            }
+
             & $powershell -noprofile -c '' | Should -BeNullOrEmpty
             $LASTEXITCODE | Should -Be 0
         }
