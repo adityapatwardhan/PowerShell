@@ -166,7 +166,7 @@ Describe "Will error correctly if an attempt to set variable to improper value" 
             { $global:PSNativeCommandArgumentPassing = "zzz" } | Should -Throw -ExceptionType System.Management.Automation.ArgumentTransformationMetadataException
         }
         else {
-            Set-Test -State skipped -Because "Experimental feature 'PSNativeCommandArgumentPassing' is not enabled"
+            Set-ItResult -Skipped -Because "Experimental feature 'PSNativeCommandArgumentPassing' is not enabled"
         }
     }
 }
