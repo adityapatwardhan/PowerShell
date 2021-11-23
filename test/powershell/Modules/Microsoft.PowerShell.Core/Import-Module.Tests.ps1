@@ -246,6 +246,12 @@ Describe "Import-Module for Binary Modules" -Tags 'CI' {
 
     It 'Should load from ModuleBase path before looking up in GAC' -Skip:(-not $IsWindows) {
         $module = Get-Module PSScheduledJob -ListAvailable -SkipEditionCheck
+
+        if (-not $module -or -not $module.Path) {
+            Set-ItResult -Skipped -Because 'PSScheduledKob module was not found. Skipping test.'
+            return
+        }
+
         $moduleBasePath = Split-Path $module.Path
         $destPath = New-Item -ItemType Directory -Path "$TestDrive/PSScheduledJob"
         $gacAssemblyPath = (Get-ChildItem "${env:WinDir}\Microsoft.NET\assembly\GAC_MSIL\Microsoft.PowerShell.ScheduledJob" -Recurse -Filter 'Microsoft.PowerShell.ScheduledJob.dll').FullName
