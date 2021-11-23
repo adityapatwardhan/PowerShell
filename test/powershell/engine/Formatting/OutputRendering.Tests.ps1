@@ -21,6 +21,11 @@ Describe 'OutputRendering tests' {
     ) {
         param($outputRendering, $ansi)
 
+        if (-not $host.UI.SupportsVirtualTerminal) {
+            Set-ItResult -Skipped -Because 'Console does not suppport VT100. Skipping tests.'
+            return
+        }
+
         $out = pwsh -noprofile -command "[System.Management.Automation.Internal.InternalTestHooks]::SetTestHook('BypassOutputRedirectionCheck', `$true); `$PSStyle.OutputRendering = '$outputRendering'; write-host '$($PSStyle.Foreground.Green)hello'"
 
         if ($ansi) {
