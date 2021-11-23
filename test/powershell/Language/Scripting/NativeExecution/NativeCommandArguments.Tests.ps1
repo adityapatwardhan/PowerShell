@@ -7,13 +7,13 @@ Describe "Behavior is specific for each platform" -tags "CI" {
     BeforeAll {
         $skipTests = $EnabledExperimentalFeatures -notcontains 'PSNativeCommandArgumentPassing'
     }
-    It "PSNativeCommandArgumentPassing is set to 'Windows' on Windows systems" -skip:(-not $IsWindows) {
+    It "PSNativeCommandArgumentPassing is set to 'Windows' on Windows systems" -skip:(-not $IsWindows -or $skipTests) {
         $PSNativeCommandArgumentPassing | Should -Be "Windows"
     }
-    It "PSNativeCommandArgumentPassing is set to 'Standard' on non-Windows systems" -skip:($IsWindows) {
+    It "PSNativeCommandArgumentPassing is set to 'Standard' on non-Windows systems" -skip:($IsWindows -or $skipTests) {
         $PSNativeCommandArgumentPassing | Should -Be "Standard"
     }
-    It "Has proper behavior on Windows" -skip:(-not $IsWindows) {
+    It "Has proper behavior on Windows" -skip:(-not $IsWindows -or $skipTests) {
         "@echo off`nSET V1=1" > "$TESTDRIVE\script 1.cmd"
         "@echo off`nSET V2=a`necho %V1%" > "$TESTDRIVE\script 2.cmd"
         "@echo off`necho %V1%`necho %V2%" > "$TESTDRIVE\script 3.cmd"
