@@ -79,6 +79,9 @@ Describe "Get-Process" -Tags "CI" {
     }
 
     It "Should fail to run Get-Process with -IncludeUserName without admin" -Skip:(!$IsWindows)  {
+        $IsElevated = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        $IsElevated | Should -Be $false -Because 'Process is expected to be unelevated'
+
         { Get-Process -IncludeUserName } | Should -Throw -ErrorId "IncludeUserNameRequiresElevation,Microsoft.PowerShell.Commands.GetProcessCommand"
     }
 
