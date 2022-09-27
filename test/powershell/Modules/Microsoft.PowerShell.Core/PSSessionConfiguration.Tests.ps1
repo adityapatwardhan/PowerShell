@@ -831,7 +831,8 @@ namespace PowershellTestConfigNamespace
     Describe "Validate Enable-PSSession Cmdlet" -Tags @("Feature", 'RequireAdminOnWindows') {
         BeforeAll {
             if ($IsNotSkipped) {
-                Enable-PSRemoting
+                # SkipNetworkProfileCheck is needed on Windows client machines
+                Enable-PSRemoting -SkipNetworkProfileCheck
             }
         }
 
