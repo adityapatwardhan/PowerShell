@@ -4,7 +4,10 @@
 Describe 'Switch-Process tests for Unix' -Tags 'CI' {
     BeforeAll {
         $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-        if ($IsWindows)
+
+        $execCommandDoesNotExist = $IsLinux -and ! (Get-Command exec -ErrorAction SilentlyContinue)
+
+        if ($IsWindows -or $execCommandDoesNotExist)
         {
             $PSDefaultParameterValues['It:Skip'] = $true
             return
