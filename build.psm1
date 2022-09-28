@@ -1148,6 +1148,8 @@ function Publish-PSTestTools {
         }
     }
 
+    Publish-CustomConnectionTestModule
+
     # `dotnet restore` on test project is not called if product projects have been restored unless -Force is specified.
     Copy-PSGalleryModules -Destination "${PSScriptRoot}/test/tools/Modules" -CsProjPath "$PSScriptRoot/test/tools/Modules/PSGalleryTestModules.csproj" -Force
 }
