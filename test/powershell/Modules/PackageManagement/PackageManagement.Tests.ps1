@@ -16,7 +16,7 @@
 $gallery = "https://www.powershellgallery.com/api/v2"
 $source = 'OneGetTestSource'
 
-Describe "PackageManagement Acceptance Test" -Tags "Feature" {
+Describe "PackageManagement Acceptance Test" -Tags "Feature", "RequireSudoOnUnix" {
 
  BeforeAll{
     Register-PackageSource -Name Nugettest -provider NuGet -Location https://www.nuget.org/api/v2 -Force

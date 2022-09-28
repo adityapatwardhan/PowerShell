@@ -180,7 +180,7 @@ function Remove-InstalledScripts
     Get-InstalledScript -Name $TestScript -ErrorAction SilentlyContinue | Uninstall-Script -Force
 }
 
-Describe "PowerShellGet - Script tests" -tags "Feature" {
+Describe "PowerShellGet - Script tests" -tags "Feature", "RequireSudoOnUnix" {
 
     BeforeAll {
         if ($script:Initialized -eq $false) {
