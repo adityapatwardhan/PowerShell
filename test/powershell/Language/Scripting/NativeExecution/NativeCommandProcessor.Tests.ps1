@@ -336,7 +336,11 @@ Describe "Run native command from a mounted FAT-format VHD" -tags @("Feature", "
 
     AfterAll {
         if ($IsWindows) {
-            Dismount-DiskImage -ImagePath $vhdx
+            # there are some cases in release automation tests where the dismount-diskimage is not found, skipping cleanup in those cases.
+            if (Get-Command Dismount-DiskImage -ErrorAction SilentlyContinue) {
+                Dismount-DiskImage -ImagePath $vhdx
+            }
+
             Remove-Item $vhdx, $create_vhdx -Force
         }
     }
