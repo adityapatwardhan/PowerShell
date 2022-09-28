@@ -6,8 +6,10 @@ Import-Module HelpersCommon
 Describe "WinRM based remoting session abrupt disconnect" -Tags 'Feature','RequireAdminOnWindows' {
 
     BeforeAll {
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
         $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-        if (! $IsWindows)
+        if (! $IsWindows -or $isWow32)
         {
             $PSDefaultParameterValues["it:skip"] = $true
             return

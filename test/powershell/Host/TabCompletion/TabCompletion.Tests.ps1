@@ -2302,7 +2302,10 @@ function MyFunction ($param1, $param2)
 
 Describe "Tab completion tests with remote Runspace" -Tags Feature,RequireAdminOnWindows {
     BeforeAll {
-        if ($IsWindows) {
+
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
+        if ($IsWindows -and -not $isWow32) {
             $session = New-RemoteSession
             $powershell = [powershell]::Create()
             $powershell.Runspace = $session.Runspace
@@ -2324,7 +2327,7 @@ Describe "Tab completion tests with remote Runspace" -Tags Feature,RequireAdminO
         }
     }
     AfterAll {
-        if ($IsWindows) {
+        if ($IsWindows -and -not $isWow32) {
             Remove-PSSession $session
             $powershell.Dispose()
         } else {

@@ -3,8 +3,9 @@
 
 Describe 'Basic COM Tests' -Tags "CI" {
     BeforeAll {
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
         $defaultParamValues = $PSDefaultParameterValues.Clone()
-        $PSDefaultParameterValues["it:skip"] = ![System.Management.Automation.Platform]::IsWindowsDesktop
+        $PSDefaultParameterValues["it:skip"] = ![System.Management.Automation.Platform]::IsWindowsDesktop -or $isWow32
     }
 
     AfterAll {

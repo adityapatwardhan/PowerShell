@@ -8,6 +8,15 @@ Describe "Remote runspace pool should expose commands in endpoint configuration"
 
     BeforeAll {
 
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
+        if ($isWow32)
+        {
+            $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
+            $PSDefaultParameterValues["it:skip"] = $true
+            return
+        }
+
         if ($IsWindows -and (Test-CanWriteToPsHome))
         {
             $configName = "restrictedV"
@@ -22,6 +31,12 @@ Describe "Remote runspace pool should expose commands in endpoint configuration"
     }
 
     AfterAll {
+
+        if ($isWow32)
+        {
+            $global:PSDefaultParameterValues = $originalDefaultParameterValues
+            return
+        }
 
         if ($IsWindows -and (Test-CanWriteToPsHome))
         {

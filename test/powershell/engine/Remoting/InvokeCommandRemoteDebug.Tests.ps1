@@ -120,7 +120,9 @@ Describe "Invoke-Command remote debugging tests" -Tags 'Feature','RequireAdminOn
 
     BeforeAll {
 
-        if (!$IsWindows)
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
+        if (!$IsWindows -or $isWow32)
         {
             $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
             $PSDefaultParameterValues["it:skip"] = $true

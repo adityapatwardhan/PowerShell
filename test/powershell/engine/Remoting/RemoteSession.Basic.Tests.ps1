@@ -61,7 +61,9 @@ Describe "JEA session Transcript script test" -Tag @("Feature", 'RequireAdminOnW
     BeforeAll {
         $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
 
-        if ( ! $IsWindows -or !(Test-CanWriteToPsHome))
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
+        if ( ! $IsWindows -or !(Test-CanWriteToPsHome) -or $isWow32)
         {
             $PSDefaultParameterValues["it:skip"] = $true
         }
@@ -103,7 +105,9 @@ Describe "JEA session Get-Help test" -Tag @("CI", 'RequireAdminOnWindows') {
     BeforeAll {
         $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
 
-        if ( ! $IsWindows -or !(Test-CanWriteToPsHome))
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
+        if ( ! $IsWindows -or !(Test-CanWriteToPsHome) -or $isWow32)
         {
             $PSDefaultParameterValues["it:skip"] = $true
         }
@@ -143,7 +147,9 @@ Describe "Remoting loopback tests" -Tags @('CI', 'RequireAdminOnWindows') {
 
         $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
 
-        if ( ! $IsWindows )
+        $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
+        if ( ! $IsWindows -or $isWow32)
         {
             $PSDefaultParameterValues["it:skip"] = $true
         }

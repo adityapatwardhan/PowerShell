@@ -11,7 +11,8 @@ try
     $WarningPreference = "SilentlyContinue"
     # Skip all tests if can't write to $PSHOME as Register-PSSessionConfiguration writes to $PSHOME
     $IsNotSkipped = ($IsWindows -and $IsCoreCLR -and (Test-IsElevated) -and (Test-CanWriteToPsHome))
-    $PSDefaultParameterValues["it:skip"] = !$IsNotSkipped
+    $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+    $PSDefaultParameterValues["it:skip"] = !$IsNotSkipped -or $isWow32
 
     #
     # TODO: Enable-PSRemoting should be performed at a higher set up for all tests.

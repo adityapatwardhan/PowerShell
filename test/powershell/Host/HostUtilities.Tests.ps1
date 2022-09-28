@@ -37,7 +37,11 @@ Describe "InvokeOnRunspace method on remote runspace" -tags "Feature","RequireAd
     BeforeAll {
 
         if ($IsWindows) {
-            $script:remoteRunspace = New-RemoteRunspace
+            $isWow32 = $env:POWERSHELL_TEST_SKIP_WOW -eq 1
+
+            if (-not $isWow32) {
+                $script:remoteRunspace = New-RemoteRunspace
+            }
         }
     }
 
@@ -48,7 +52,7 @@ Describe "InvokeOnRunspace method on remote runspace" -tags "Feature","RequireAd
         }
     }
 
-    It "Method should successfully invoke command on remote runspace" -Skip:(!$IsWindows) {
+    It "Method should successfully invoke command on remote runspace" -Skip:((!$IsWindows) -or $isWow32) {
 
         $command = [System.Management.Automation.PSCommand]::new()
         $command.AddScript('"Hello!"')
