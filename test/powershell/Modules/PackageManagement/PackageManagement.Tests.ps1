@@ -13,95 +13,74 @@
 #
 # ------------------ PackageManagement Test  -----------------------------------
 
-$gallery = "https://www.powershellgallery.com/api/v2"
-$source = 'OneGetTestSource'
 
 Describe "PackageManagement Acceptance Test" -Tags "Feature" {
 
- BeforeAll{
-    Register-PackageSource -Name Nugettest -provider NuGet -Location https://www.nuget.org/api/v2 -Force
+    BeforeAll{
+        $packageName = "jQuery"
+        $gallery = "https://www.powershellgallery.com/api/v2"
+        $source = 'OneGetTestSource'
+        $localSourceName = [guid]::NewGuid().ToString("N")
+        $nupkgPath = Join-Path $PSScriptRoot assets
+        Register-PackageSource -Name $localSourceName -provider NuGet -Location $nupkgPath -Force -Trusted
 
-    $packageSource = Get-PackageSource -Location $gallery -ErrorAction SilentlyContinue
-    if ($packageSource) {
-        $source = $packageSource.Name
-        Set-PackageSource -Name $source -Trusted
-    } else {
-        Register-PackageSource -Name $source -Location $gallery -ProviderName 'PowerShellGet' -Trusted -ErrorAction SilentlyContinue
+        $packageSource = Get-PackageSource -Location $gallery -ErrorAction SilentlyContinue
+        if ($packageSource) {
+            $source = $packageSource.Name
+            Set-PackageSource -Name $source -Trusted
+        } else {
+            Register-PackageSource -Name $source -Location $gallery -ProviderName 'PowerShellGet' -Trusted -ErrorAction SilentlyContinue
+        }
+
+        $SavedProgressPreference = $ProgressPreference
+        $ProgressPreference = "SilentlyContinue"
     }
 
-    $SavedProgressPreference = $ProgressPreference
-    $ProgressPreference = "SilentlyContinue"
-
-    if (-not $IsWindows) {
-        try {
-            New-Item -Path ~/.local/share/PackageManagement/NuGet/Packages -ItemType Directory -Force -ErrorAction Stop
-        }
-        catch {
-                .{
-                    Get-Item ~/.local -ErrorAction Ignore
-                    Get-Item ~/.local/share -ErrorAction Ignore
-                    Get-Item ~/.local/share/PackageManagement -ErrorAction Ignore
-                    Get-Item ~/.local/share/PackageManagement/NuGet -ErrorAction Ignore
-                    Get-Item ~/.local/share/PackageManagement/NuGet/Packages -ErrorAction Ignore
-                } | Out-String | Write-Verbose -Verbose
-        }
-        finally {
-            Write-Verbose -Verbose "Create Path: $(Get-Item ~/.local/share/PackageManagement/NuGet/Packages -ErrorAction Ignore)"
-        }
+    AfterAll {
+        Unregister-PackageSource -Name $localSourceName -Force -ErrorAction Ignore
+        $ProgressPreference = $SavedProgressPreference
     }
- }
- AfterAll {
-     $ProgressPreference = $SavedProgressPreference
- }
-    It "get-packageprovider" {
 
+    It "Get-PackageProvider" {
         $gpp = Get-PackageProvider
-
         $gpp.Name | Should -Contain 'NuGet'
-
         $gpp.Name | Should -Contain 'PowerShellGet'
     }
 
-    It "find-packageprovider PowerShellGet" {
+    It "Find-PackageProvider PowerShellGet" {
         $fpp = (Find-PackageProvider -Name "PowerShellGet" -Force).name
         $fpp | Should -Contain "PowerShellGet"
     }
 
-    It "install-packageprovider, Expect succeed" {
-        $ipp = (Install-PackageProvider -Name NanoServerPackage -Force -Source $source -Scope CurrentUser).name
-        $ipp | Should -Contain "NanoServerPackage"
+    It "Install-PackageProvider, Expect succeed" {
+        $name = "NanoServerPackage"
+        $ipp = (Install-PackageProvider -Name $name -Force -Source $source -Scope CurrentUser).name
+        $ipp | Should -Contain $name
     }
 
     It "Find-package"  {
-        $f = Find-Package -ProviderName NuGet -Name jquery -Source Nugettest
-        $f.Name | Should -Contain "jquery"
+        $f = Find-Package -ProviderName NuGet -Name $packageName -Source $localSourceName
+        $f.Name | Should -Contain "$packageName"
 	}
 
     It "Install-package"  {
-        if ($env:__INCONTAINER) {
-            Write-Verbose -Verbose "Id: $(id)" # retrieve the id of the user
-        }
-
-        if (-not $IsWindows) {
-            /bin/ls -ld '~/.local/share/PackageManagement/NuGet/Packages' 2>&1 | Out-String | Write-Verbose -Verbose
-        }
-
-        $i = Install-Package -ProviderName NuGet -Name jquery -Force -Source Nugettest -Scope CurrentUser
-        $i.Name | Should -Contain "jquery"
+        $i = Install-Package -ProviderName NuGet -Name $packageName -Force -Source $localSourceName -Scope CurrentUser
+        $i.Name | Should -Contain "$packageName"
 	}
 
+    # this test relies on the previous test to install jquery
     It "Get-package"  {
-        $g = Get-Package -ProviderName NuGet -Name jquery
-        $g.Name | Should -Contain "jquery"
+        $g = Get-Package -ProviderName NuGet -Name $packageName
+        $g.Name | Should -Contain "$packageName"
 	}
 
     It "save-package"  {
-        $s = Save-Package -ProviderName NuGet -Name jquery -Path $TestDrive -Force -Source Nugettest
-        $s.Name | Should -Contain "jquery"
+        $s = Save-Package -ProviderName NuGet -Name $packageName -Path $TestDrive -Force -Source $localSourceName
+        $s.Name | Should -Contain "$packageName"
 	}
 
     It "uninstall-package"  {
-        $u = Uninstall-Package -ProviderName NuGet -Name jquery
-        $u.Name | Should -Contain "jquery"
+        $u = Uninstall-Package -ProviderName NuGet -Name $packageName
+        $u.Name | Should -Contain "$packageName"
 	}
 }
