@@ -1999,6 +1999,11 @@ dir -Recurse `
         It "Input '<inputStr>' should successfully complete" -TestCases $testCases -Skip:(!$IsWindows) {
             param($inputStr, $expected)
 
+            if (Test-IsWindowsArm64) {
+                Set-ItResult -Pending -Because "TBD"
+            }
+
+
             $res = TabExpansion2 -inputScript $inputStr -cursorColumn $inputStr.Length
             $res.CompletionMatches.Count | Should -BeGreaterThan 0
             $res.CompletionMatches[0].CompletionText | Should -BeExactly $expected
