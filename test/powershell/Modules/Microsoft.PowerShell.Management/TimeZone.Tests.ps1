@@ -60,7 +60,6 @@ Describe "Get-TimeZone Test cases" -Tags "CI" {
     }
 
     It "Call Get-TimeZone using ID param and multiple items" -skip:$skipTest {
-        wait-debugger
         $selectedTZ = $timeZonesAvailable | Select-Object -First 3 -ExpandProperty Id
         $result = (Get-TimeZone -Id $selectedTZ).Id
         $result | Should -Be $selectedTZ
