@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -582,6 +583,12 @@ namespace System.Management.Automation
             ArgumentException.ThrowIfNullOrEmpty(basePaths);
 
             PowerShellAssemblyLoadContext.InitializeSingleton(basePaths);
+        }
+
+        [ModuleInitializer]
+        internal static void ModuleInitializer()
+        {
+            PowerShellAssemblyLoadContext.InitializeSingleton(string.Empty);
         }
     }
 
