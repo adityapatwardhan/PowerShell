@@ -547,8 +547,7 @@ Describe "Verify aliases and cmdlets" -Tags "CI" {
                     "Microsoft.PowerShell.Host",
                     "Microsoft.PowerShell.Diagnostics",
                     "Microsoft.WSMan.Management",
-                    "Microsoft.PowerShell.Core",
-                    "CimCmdlets"
+                    "Microsoft.PowerShell.Core"
                     )
             $getAliases = {
                 param($moduleList)

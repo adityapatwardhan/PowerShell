@@ -55,6 +55,9 @@ namespace Microsoft.PowerShell.Commands
         private const string ParameterSet_FQName_ViaPsrpSession = "FullyQualifiedNameAndPSSession";
         private const string ParameterSet_ViaWinCompat = "WinCompat";
         private const string ParameterSet_FQName_ViaWinCompat = "FullyQualifiedNameAndWinCompat";
+        private const string CimCmdletModuleName = "CimCmdlets";
+        private const string CimCmdletModuleNameWithExtension = "CimCmdlets.psd1";
+        private const string WinPSModulePathPart = @"system32\WindowsPowerShell\v1.0\Modules";
 
         /// <summary>
         /// This parameter specifies whether to import to the current session state
@@ -1903,7 +1906,16 @@ namespace Microsoft.PowerShell.Commands
             {
                 foreach (string name in Name)
                 {
-                    ImportModule_LocallyViaName_WithTelemetry(importModuleOptions, name);
+                    if (name.EndsWith(CimCmdletModuleName, StringComparison.OrdinalIgnoreCase)
+                        || name.EndsWith(CimCmdletModuleNameWithExtension, StringComparison.OrdinalIgnoreCase)
+                        || name.Contains(WinPSModulePathPart, StringComparison.OrdinalIgnoreCase))
+                    {
+                        ImportModulesUsingWinCompat(new string[] { name }, this.FullyQualifiedName, importModuleOptions);
+                    }
+                    else
+                    {
+                        ImportModule_LocallyViaName_WithTelemetry(importModuleOptions, name);
+                    }
                 }
             }
             else if (this.ParameterSetName.Equals(ParameterSet_ViaPsrpSession, StringComparison.OrdinalIgnoreCase))

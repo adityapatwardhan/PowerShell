@@ -6,7 +6,6 @@ Import-Module HelpersCommon
 # Test Settings:
 # This is the list of PowerShell modules for which we test update-help
 [string[]] $powershellCoreModules = @(
-    "CimCmdlets"
     <#
     This scenario is broken due to issue # https://github.com/PowerShell/platyPS/issues/241
     Re-enable when issue is fixed.
@@ -47,20 +46,12 @@ else
 }
 
 # default values for system modules
-[string] $myUICulture = 'en-US'   
+[string] $myUICulture = 'en-US'
 [string] $HelpInstallationPath = Join-Path $PSHOME $myUICulture
 [string] $HelpInstallationPathHome = Join-Path $userHelpRoot $myUICulture
 
 # This is the list of test cases -- each test case represents a PowerShell module.
 [hashtable] $testCases = @{
-
-    "CimCmdlets" = @{
-        HelpFiles            = "Microsoft.Management.Infrastructure.CimCmdlets.dll-help.xml"
-        HelpInfoFiles        = "CimCmdlets_fb6cc51d-c096-4b38-b78d-0fed6277096a_HelpInfo.xml"
-        CompressedFiles      = "CimCmdlets_fb6cc51d-c096-4b38-b78d-0fed6277096a_en-US_HelpContent$extension"
-        HelpInstallationPath = Join-Path -Path:$PSHOME -ChildPath:Modules -AdditionalChildPath:CimCmdlets, $myUICulture
-        HelpInstallationPathHome = Join-Path -Path:$userHelpRoot -ChildPath:CimCmdlets -AdditionalChildPath:$myUICulture
-    }
 
     "Microsoft.PowerShell.Archive" = @{
         HelpFiles            = "Microsoft.PowerShell.Archive-help.xml"
@@ -216,7 +207,7 @@ function RunUpdateHelpTests
 
                 # Delete the whole help directory
                 Remove-Item ($moduleHelpPath) -Recurse
- 
+
                 [hashtable] $UICultureParam = $(if ((Get-UICulture).Name -ne $myUICulture) { @{ UICulture = $myUICulture } } else { @{} })
                 [hashtable] $sourcePathParam = $(if ($useSourcePath) { @{ SourcePath = Join-Path $PSScriptRoot assets } } else { @{} })
                 Update-Help -Module:$moduleName -Force @UICultureParam @sourcePathParam -Scope:$updateScope

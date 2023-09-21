@@ -2314,7 +2314,6 @@ function New-ILNugetPackageSource
         # This is for enabling applications that hosts PowerShell to ship the built-in modules.
 
         $winBuiltInModules = @(
-            "CimCmdlets",
             "Microsoft.PowerShell.Diagnostics",
             "Microsoft.PowerShell.Host",
             "Microsoft.PowerShell.Management",

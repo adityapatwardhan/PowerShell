@@ -17,8 +17,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.PowerShell.Comman
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.PowerShell.SDK", "src\Microsoft.PowerShell.SDK\Microsoft.PowerShell.SDK.csproj", "{4BC19063-1F66-467B-87DE-80449C72BCD6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Management.Infrastructure.CimCmdlets", "src\Microsoft.Management.Infrastructure.CimCmdlets\Microsoft.Management.Infrastructure.CimCmdlets.csproj", "{131A8527-92D7-468F-822D-5354229A865C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.PowerShell.Commands.Diagnostics", "src\Microsoft.PowerShell.Commands.Diagnostics\Microsoft.PowerShell.Commands.Diagnostics.csproj", "{439A24FC-8E0A-48B6-8227-44C297311F49}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.WSMan.Management", "src\Microsoft.WSMan.Management\Microsoft.WSMan.Management.csproj", "{8F63D134-E413-4181-936D-D82F3F5F1D85}"

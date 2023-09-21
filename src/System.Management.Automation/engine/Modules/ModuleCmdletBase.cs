@@ -291,7 +291,6 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected static readonly HashSet<string> BuiltInModules = new(StringComparer.OrdinalIgnoreCase)
         {
-            "CimCmdlets",
             "Microsoft.PowerShell.Diagnostics",
             "Microsoft.PowerShell.Host",
             "Microsoft.PowerShell.Management",
@@ -308,7 +307,8 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         internal static IReadOnlyList<string> DefaultCompatiblePSEditions { get; } = new string[]
         {
-            "Desktop"
+            "Desktop",
+            "Core"
         };
 
         /// <summary>
@@ -6016,6 +6016,28 @@ namespace Microsoft.PowerShell.Commands
                 {
                     found = true;
 
+                    string moduleName = ModuleIntrinsics.GetModuleName(fileName);
+
+                    var modOption = new ImportModuleOptions();
+
+                    var modules = ImportModulesUsingWinCompat(new string[] { parentModule.Name }, moduleFullyQualifiedNames: null, modOption);
+
+                    foreach (var m in modules)
+                    {
+                        if (BaseAsCustomObject)
+                        {
+                            WriteObject(m.AsCustomObject());
+                        }
+                        else
+                            // If -pass has been specified, emit a module info...
+                            if (BasePassThru)
+                        {
+                            WriteObject(m);
+                        }
+                    }
+
+                    /*
+
                     // Create the module object...
                     try
                     {
@@ -6089,6 +6111,7 @@ namespace Microsoft.PowerShell.Commands
                             WriteError(e.ErrorRecord);
                         }
                     }
+                    */
                 }
                 else
                 {
@@ -6168,7 +6191,7 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
         }
-        
+
         private static void RemoveNestedModuleFunctions(
             ExecutionContext context,
             PSModuleInfo module,
@@ -7276,7 +7299,7 @@ namespace Microsoft.PowerShell.Commands
                     targetSessionState.ExecutionContext);
 
                 // Note that the module 'func' and the function table 'functionInfo' instances are now linked
-                // together (see 'CopiedCommand' in CommandInfo class), so setting visibility on one also 
+                // together (see 'CopiedCommand' in CommandInfo class), so setting visibility on one also
                 // sets it on the other.
                 SetCommandVisibility(isImportModulePrivate, functionInfo);
                 functionInfo.Module = sourceModule;
