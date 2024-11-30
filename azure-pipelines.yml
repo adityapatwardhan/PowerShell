@@ -1,0 +1,27 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-16.04'
+
+container: 'arpatwar/testalpinegclib:latest'
+
+steps:
+- pwsh: Get-ChildItem 'Env:'
+  displayName: Capture environment
+
+- pwsh: Get-Content /etc/os-release
+  displayName: Display OS info
+  
+- pwsh: | 
+    Import-Module '$(Build.SourcesDirectory)/build.psm1' -Force
+    Start-PSBootstrap
+    Start-PSBuild
+    Start-PSPester
+  displayName: 'Run a one-line script'
+  
